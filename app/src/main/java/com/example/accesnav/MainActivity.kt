@@ -85,15 +85,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val result = tts?.setLanguage(Locale.getDefault())
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    Log.e("TTS", "Language not supported")
-                } else {
-                    Log.d("TTS", "TTS Ready with locale: ${Locale.getDefault()}")
-                    tts?.speak("AccessNav activ. Spune destinația.", TextToSpeech.QUEUE_FLUSH, null, "READY")
-                }
+                tts?.language = Locale.US
+                tts?.speak("AccessNav is ready. Please say your destination.", TextToSpeech.QUEUE_FLUSH, null, "READY")
             } else {
-                Toast.makeText(this, "Eroare inițializare Voce", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Voice engine initialization failed", Toast.LENGTH_SHORT).show()
             }
         }
         
@@ -250,7 +245,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             .color(Color.parseColor("#1A73E8"))
                             .width(18f))
                         
-                        val msg = "$distance. $duration. Porrim călătoria?"
+                        val msg = "Distance: $distance. Travel time: $duration. Should we start the navigation?"
                         binding.lastActivityText.text = "$duration ($distance)"
                         
                         announceAndAsk(msg)
@@ -291,8 +286,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun listenForConfirmation() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Spune DA pentru a porni sau NU pentru a aștepta")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Say YES to start or NO to wait")
         }
         try {
             confirmationLauncher.launch(intent)
@@ -301,16 +296,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun handleConfirmationResponse(response: String) {
         when {
-            response.contains("da") || response.contains("yes") || response.contains("start") -> {
+            response.contains("yes") || response.contains("da") || response.contains("start") -> {
                 cancelRetryTimer()
                 startNavigation()
             }
-            response.contains("nu") || response.contains("no") -> {
-                Toast.makeText(this, "Navigare amânată. Voi întreba din nou în 5 minute.", Toast.LENGTH_SHORT).show()
+            response.contains("no") || response.contains("nu") -> {
+                Toast.makeText(this, "Navigation postponed. I will ask again in 5 minutes.", Toast.LENGTH_SHORT).show()
                 startRetryTimer()
             }
             else -> {
-                tts?.speak("Nu am înțeles. Te rog spune DA sau NU.", TextToSpeech.QUEUE_FLUSH, null, null)
+                tts?.speak("I didn't understand. Please say YES or NO.", TextToSpeech.QUEUE_FLUSH, null, null)
             }
         }
     }
@@ -318,7 +313,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun startRetryTimer() {
         cancelRetryTimer()
         retryRunnable = Runnable {
-            announceAndAsk("Au trecut 5 minute. Porrim călătoria acum?")
+            announceAndAsk("Five minutes have passed. Should we start the navigation now?")
             startRetryTimer() // Reschedule
         }
         retryRunnable?.let { handler.postDelayed(it, 5 * 60 * 1000) }
