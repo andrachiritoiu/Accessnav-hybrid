@@ -84,7 +84,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         tts = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) tts?.language = Locale.US
+            if (status == TextToSpeech.SUCCESS) {
+                val result = tts?.setLanguage(Locale.getDefault())
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e("TTS", "Language not supported")
+                } else {
+                    Log.d("TTS", "TTS Ready with locale: ${Locale.getDefault()}")
+                    tts?.speak("AccessNav activ. Spune destinația.", TextToSpeech.QUEUE_FLUSH, null, "READY")
+                }
+            } else {
+                Toast.makeText(this, "Eroare inițializare Voce", Toast.LENGTH_SHORT).show()
+            }
         }
         
         // Find map fragment and load map
