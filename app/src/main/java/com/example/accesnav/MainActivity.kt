@@ -240,8 +240,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             .color(Color.parseColor("#1A73E8"))
                             .width(18f))
                         
-                        val msg = "Traseu găsit spre $destName. Distanță: $distance. Timp estimat: $duration. Porrim călătoria?"
-                        binding.lastActivityText.text = "Timp: $duration ($distance)"
+                        val msg = "$distance. $duration. Porrim călătoria?"
+                        binding.lastActivityText.text = "$duration ($distance)"
                         
                         announceAndAsk(msg)
                         
