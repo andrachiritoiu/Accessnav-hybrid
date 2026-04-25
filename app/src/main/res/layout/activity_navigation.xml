@@ -48,26 +48,26 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@drawable/bg_status_pill"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="8dp"
-            android:gravity="center"
+            android:orientation="vertical"
+            android:gravity="end"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
-            
-            <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:background="@drawable/shape_pulse_dot" />
-            
-            <TextView
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/modeSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="AI SCANNING"
+                android:checked="false"
+                app:thumbIcon="@drawable/ic_navigation"
+                android:contentDescription="Navigation Mode Toggle" />
+
+            <TextView
+                android:id="@+id/modeLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="INDOOR MODE"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.1" />
         </LinearLayout>

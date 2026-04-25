@@ -137,6 +137,24 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
     private fun setupControls() {
         binding.stopNavButton.setOnClickListener { finish() }
         binding.muteButton.setOnClickListener { tts?.stop() }
+        
+        binding.modeSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                // Outdoor Mode
+                isExitingHouse = false
+                binding.modeLabel.text = "OUTDOOR MODE"
+                binding.modeSwitch.contentDescription = "Outdoor Mode Active"
+                speak("Switched to Outdoor Mode. GPS navigation active.")
+                provideNextGoogleStep()
+            } else {
+                // Indoor Mode
+                isExitingHouse = true
+                binding.modeLabel.text = "INDOOR MODE"
+                binding.modeSwitch.contentDescription = "Indoor Mode Active"
+                speak("Switched to Indoor Mode. Scanning for exits and obstacles.")
+                binding.detectionBadge.text = "SEARCHING"
+            }
+        }
     }
 
     private fun startCamera() {
