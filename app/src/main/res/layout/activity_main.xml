@@ -124,18 +124,6 @@
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/voiceSearchFab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginBottom="16dp"
-            android:src="@drawable/ic_mic"
-            app:backgroundTint="#FFFFFF"
-            app:tint="#1A73E8"
-            app:elevation="4dp"
-            android:contentDescription="Voice Search" />
-
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/activityCard"
             android:layout_width="match_parent"
