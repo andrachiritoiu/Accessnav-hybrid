@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Geocoder
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -26,7 +28,6 @@ import com.google.android.gms.maps.model.PolylineOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.NetworkInterface
 import java.net.URL
@@ -38,22 +39,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var googleMap: GoogleMap? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var tts: TextToSpeech? = null
-    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
-    private var retryRunnable: Runnable? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var timeoutRunnable: Runnable? = null
 
     private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val data = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
             val destination = data?.get(0) ?: ""
             handleDestinationSelected(destination)
-        }
-    }
-
-    private val confirmationLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val data = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val response = data?.get(0)?.lowercase() ?: ""
-            handleConfirmationResponse(response)
         }
     }
 
@@ -70,37 +63,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize Maps SDK with latest renderer and error handling
-        try {
-            MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST) { renderer ->
-                when (renderer) {
-                    MapsInitializer.Renderer.LATEST -> Log.d("Maps", "The latest version of the renderer is used.")
-                    MapsInitializer.Renderer.LEGACY -> Log.d("Maps", "The legacy version of the renderer is used.")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("Maps", "MapsInitializer failed: ${e.message}")
-        }
+        MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST) { }
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.US
                 tts?.speak("AccessNav is ready. Please say your destination.", TextToSpeech.QUEUE_FLUSH, null, "READY")
-            } else {
-                Toast.makeText(this, "Voice engine initialization failed", Toast.LENGTH_SHORT).show()
             }
         }
         
-        // Find map fragment and load map
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
-        if (mapFragment != null) {
-            Log.d("Maps", "Map Fragment found successfully!")
-            mapFragment.getMapAsync(this)
-        } else {
-            Log.e("Maps", "CRITICAL: Map Fragment is NULL!")
-            Toast.makeText(this, "Eroare: Fragmentul hărții nu a fost găsit!", Toast.LENGTH_LONG).show()
-        }
+        mapFragment?.getMapAsync(this)
 
         setupUI()
         checkApiKey()
@@ -112,28 +86,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             val apiKey = info.metaData.getString("com.google.android.geo.API_KEY")
             if (apiKey == "YOUR_API_KEY_HERE" || apiKey.isNullOrBlank()) {
                 binding.apiKeyWarning.visibility = View.VISIBLE
-                Toast.makeText(this, "HARTA ESTE BLOCATĂ: Adaugă API KEY în Manifest!", Toast.LENGTH_LONG).show()
-            } else {
-                binding.apiKeyWarning.visibility = View.GONE
             }
-        } catch (e: Exception) {
-            binding.apiKeyWarning.visibility = View.VISIBLE
-        }
+        } catch (e: Exception) { }
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        Log.d("Maps", "Map is ready and callback received!")
-        
-        googleMap?.setOnMapLoadedCallback {
-            Log.d("Maps", "Map fully loaded")
-            Toast.makeText(this, "Harta Google s-a încărcat cu succes!", Toast.LENGTH_SHORT).show()
-        }
-
-        // High-contrast accessibility settings
         googleMap?.uiSettings?.isZoomControlsEnabled = true
-        googleMap?.uiSettings?.isMyLocationButtonEnabled = true
-        
         enableMyLocation()
     }
 
@@ -147,41 +106,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
         } else {
-            locationPermissionLauncher.launch(arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ))
+            locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
         }
     }
 
     private fun setupUI() {
-        binding.startNavButton.setOnClickListener {
+        binding.startNavButton.setOnClickListener { startNavigation() }
+        binding.voiceSearchFab.setOnClickListener { startVoiceSearch() }
+        binding.settingsButton.setOnClickListener { Toast.makeText(this, "Settings Ready", Toast.LENGTH_SHORT).show() }
+        
+        binding.confirmationButton.setOnClickListener {
+            cancelTimeout()
             startNavigation()
         }
 
-        binding.voiceSearchFab.setOnClickListener {
-            startVoiceSearch()
-        }
-
-        binding.settingsButton.setOnClickListener {
-            Toast.makeText(this, "Maps Accessibility Configured", Toast.LENGTH_SHORT).show()
-        }
-
         val ip = getLocalIpAddress()
-        binding.lastActivityText.text = "IP: $ip • System Active"
+        binding.lastActivityText.text = "IP: $ip • Active"
     }
 
     private fun startVoiceSearch() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Where to?")
         }
-        try {
-            voiceLauncher.launch(intent)
-        } catch (e: Exception) {
-            Toast.makeText(this, "Voice Search Error", Toast.LENGTH_SHORT).show()
-        }
+        try { voiceLauncher.launch(intent) } catch (e: Exception) { }
     }
 
     private fun handleDestinationSelected(destinationName: String) {
@@ -195,40 +144,30 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     if (!addresses.isNullOrEmpty()) {
                         val address = addresses[0]
                         val destLatLng = LatLng(address.latitude, address.longitude)
-
                         binding.destinationText.visibility = View.VISIBLE
                         binding.destinationText.text = "Target: $destinationName"
-
                         googleMap?.clear()
                         googleMap?.addMarker(MarkerOptions().position(destLatLng).title(destinationName))
                         
                         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                             location?.let {
                                 val currentLatLng = LatLng(it.latitude, it.longitude)
-                                fetchDirections(currentLatLng, destLatLng, destinationName)
-                            } ?: run {
-                                googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(destLatLng, 15f))
+                                fetchDirections(currentLatLng, destLatLng)
                             }
                         }
-                    } else {
-                        Toast.makeText(this@MainActivity, "Location not found", Toast.LENGTH_SHORT).show()
                     }
                 }
-            } catch (e: Exception) {
-                Log.e("Maps", "Error: ${e.message}")
-            }
+            } catch (e: Exception) { }
         }
     }
 
-    private fun fetchDirections(origin: LatLng, dest: LatLng, destName: String) {
+    private fun fetchDirections(origin: LatLng, dest: LatLng) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val apiKey = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData.getString("com.google.android.geo.API_KEY")
                 val urlString = "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${dest.latitude},${dest.longitude}&mode=walking&key=$apiKey"
-                
                 val connection = URL(urlString).openConnection() as HttpURLConnection
-                val data = connection.inputStream.bufferedReader().readText()
-                val json = JSONObject(data)
+                val json = JSONObject(connection.inputStream.bufferedReader().readText())
                 
                 if (json.getString("status") == "OK") {
                     val route = json.getJSONArray("routes").getJSONObject(0)
@@ -236,91 +175,50 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val legs = route.getJSONArray("legs").getJSONObject(0)
                     val duration = legs.getJSONObject("duration").getString("text")
                     val distance = legs.getJSONObject("distance").getString("text")
-                    
                     val path = decodePolyline(overviewPolyline)
                     
                     withContext(Dispatchers.Main) {
-                        googleMap?.addPolyline(PolylineOptions()
-                            .addAll(path)
-                            .color(Color.parseColor("#1A73E8"))
-                            .width(18f))
-                        
-                        val msg = "Distance: $distance. Travel time: $duration. Should we start the navigation?"
+                        googleMap?.addPolyline(PolylineOptions().addAll(path).color(Color.parseColor("#1A73E8")).width(18f))
+                        val msg = "Distance: $distance. Travel time: $duration. Double tap the screen to start now."
                         binding.lastActivityText.text = "$duration ($distance)"
                         
-                        announceAndAsk(msg)
+                        showConfirmationUI(msg)
                         
-                        val bounds = LatLngBounds.Builder()
-                            .include(origin)
-                            .include(dest)
-                            .build()
+                        val bounds = LatLngBounds.Builder().include(origin).include(dest).build()
                         googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 250))
                     }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@MainActivity, "Eroare Directions API: ${json.getString("status")}", Toast.LENGTH_LONG).show()
-                        drawFallbackRoute(origin, dest) // Fallback to straight line
-                    }
                 }
-            } catch (e: Exception) {
-                Log.e("Maps", "Directions error: ${e.message}")
-            }
+            } catch (e: Exception) { }
         }
     }
 
-    private fun announceAndAsk(message: String) {
-        val params = Bundle()
-        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "CONFIRMATION_ASK")
-        tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {}
-            override fun onDone(utteranceId: String?) {
-                if (utteranceId == "CONFIRMATION_ASK") {
-                    runOnUiThread { listenForConfirmation() }
-                }
-            }
-            override fun onError(utteranceId: String?) {}
-        })
-        tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "CONFIRMATION_ASK")
+    private fun showConfirmationUI(message: String) {
+        tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "CONFIRM")
+        binding.confirmationButton.visibility = View.VISIBLE
+        binding.bottomControls.visibility = View.GONE
+        binding.topOverlay.visibility = View.GONE
+        
+        startTimeout()
     }
 
-    private fun listenForConfirmation() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US)
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Say YES to start or NO to wait")
-        }
-        try {
-            confirmationLauncher.launch(intent)
-        } catch (e: Exception) { }
+    private fun startTimeout() {
+        cancelTimeout()
+        timeoutRunnable = Runnable { resetUI() }
+        mainHandler.postDelayed(timeoutRunnable!!, 10000)
     }
 
-    private fun handleConfirmationResponse(response: String) {
-        when {
-            response.contains("yes") || response.contains("da") || response.contains("start") -> {
-                cancelRetryTimer()
-                startNavigation()
-            }
-            response.contains("no") || response.contains("nu") -> {
-                Toast.makeText(this, "Navigation postponed. I will ask again in 5 minutes.", Toast.LENGTH_SHORT).show()
-                startRetryTimer()
-            }
-            else -> {
-                tts?.speak("I didn't understand. Please say YES or NO.", TextToSpeech.QUEUE_FLUSH, null, null)
-            }
-        }
+    private fun cancelTimeout() {
+        timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
     }
 
-    private fun startRetryTimer() {
-        cancelRetryTimer()
-        retryRunnable = Runnable {
-            announceAndAsk("Five minutes have passed. Should we start the navigation now?")
-            startRetryTimer() // Reschedule
-        }
-        retryRunnable?.let { handler.postDelayed(it, 5 * 60 * 1000) }
-    }
-
-    private fun cancelRetryTimer() {
-        retryRunnable?.let { handler.removeCallbacks(it) }
+    private fun resetUI() {
+        binding.confirmationButton.visibility = View.GONE
+        binding.bottomControls.visibility = View.VISIBLE
+        binding.topOverlay.visibility = View.VISIBLE
+        binding.destinationText.visibility = View.GONE
+        googleMap?.clear()
+        binding.lastActivityText.text = "Ready to navigate"
+        tts?.speak("Request timed out. Returning to home.", TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun decodePolyline(encoded: String): List<LatLng> {
@@ -338,8 +236,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 result = result or (b and 0x1f shl shift)
                 shift += 5
             } while (b >= 0x20)
-            val dlat = if (result and 1 != 0) (result shr 1).inv() else result shr 1
-            lat += dlat
+            lat += if (result and 1 != 0) (result shr 1).inv() else result shr 1
             shift = 0
             result = 0
             do {
@@ -347,15 +244,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 result = result or (b and 0x1f shl shift)
                 shift += 5
             } while (b >= 0x20)
-            val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
-            lng += dlng
+            lng += if (result and 1 != 0) (result shr 1).inv() else result shr 1
             poly.add(LatLng(lat.toDouble() / 1e5, lng.toDouble() / 1e5))
         }
         return poly
-    }
-
-    private fun drawFallbackRoute(start: LatLng, end: LatLng) {
-        googleMap?.addPolyline(PolylineOptions().add(start).add(end).color(Color.GRAY).width(12f))
     }
 
     private fun startNavigation() {
@@ -382,7 +274,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onDestroy() {
-        cancelRetryTimer()
+        cancelTimeout()
         tts?.shutdown()
         super.onDestroy()
     }
