@@ -256,6 +256,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         val intent = Intent(this, NavigationActivity::class.java)
         intent.putExtra("DESTINATION", binding.destinationText.text.toString())
         startActivity(intent)
+        resetUI() // Clear route and buttons so it's fresh when returning
     }
 
     private fun getLocalIpAddress(): String {
