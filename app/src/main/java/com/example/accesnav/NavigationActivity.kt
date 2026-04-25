@@ -41,6 +41,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
     private lateinit var binding: ActivityNavigationBinding
     private var tts: TextToSpeech? = null
     private var udpSocket: DatagramSocket? = null
+    private var udpStarted = false
     private lateinit var cameraExecutor: ExecutorService
     private var googleMap: GoogleMap? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -320,7 +321,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
             "LEFT" -> longArrayOf(0, 300) // 1 pulse for Left
             "RIGHT" -> longArrayOf(0, 300, 150, 300) // 2 pulses for Right
             "STOP" -> longArrayOf(0, 800) // Long pulse for stop
-            else -> longArrayOf(0, 100) // Short pulse for forward
+            else -> longArrayOf(0, 150) // Short pulse for forward
         }
         
         if (Build.VERSION.SDK_INT >= 26) {
@@ -332,6 +333,9 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
     }
 
     private fun startUdpListener() {
+        if (udpStarted) return
+        udpStarted = true
+        
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val socket = DatagramSocket(5050)
@@ -343,9 +347,13 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
                     val message = String(packet.data, 0, packet.length).trim().uppercase()
                     withContext(Dispatchers.Main) {
                         if (message == "RAMP_RIGHT") handleDetection("BEACON", "Ramp detected.", "RIGHT")
+                        if (message == "DANGER") handleDetection("BEACON", "Danger ahead. Stop.", "STOP")
                     }
                 }
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                udpStarted = false
+                udpSocket?.close()
+            }
         }
     }
 

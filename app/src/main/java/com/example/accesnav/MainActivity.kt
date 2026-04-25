@@ -285,13 +285,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun vibrateCommand(command: String) {
         val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
         val pattern = when (command) {
-            "FORWARD" -> longArrayOf(0, 150)
-            "LEFT" -> longArrayOf(0, 120, 120, 120)
-            "RIGHT" -> longArrayOf(0, 120, 120, 120, 120, 120)
-            "STOP" -> longArrayOf(0, 700)
-            else -> longArrayOf(0, 100)
+            "LEFT" -> longArrayOf(0, 300) // 1 pulse for Left
+            "RIGHT" -> longArrayOf(0, 300, 150, 300) // 2 pulses for Right
+            "STOP" -> longArrayOf(0, 700) // Long pulse for stop
+            else -> longArrayOf(0, 150) // Short pulse for forward
         }
-        vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
+        
+        if (Build.VERSION.SDK_INT >= 26) {
+            vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
+        }
     }
 
     private fun decodePolyline(encoded: String): List<LatLng> {
