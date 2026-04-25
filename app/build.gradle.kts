@@ -60,8 +60,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
-    // ML Kit Text Recognition
+    // ML Kit Text Recognition & Object Detection
     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
+    implementation("com.google.mlkit:object-detection:17.0.2")
+
+    // Google Maps & Places
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
+    implementation("com.google.android.libraries.places:places:3.4.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

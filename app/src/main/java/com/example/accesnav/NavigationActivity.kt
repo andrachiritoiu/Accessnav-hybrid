@@ -2,12 +2,10 @@ package com.example.accesnav
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.*
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -17,6 +15,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.accesnav.databinding.ActivityNavigationBinding
 import com.google.android.gms.wearable.Wearable
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.objects.ObjectDetection
+import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.*
@@ -35,7 +35,15 @@ class NavigationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var udpSocket: DatagramSocket? = null
     private lateinit var cameraExecutor: ExecutorService
     
-    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    // AI Detectors
+    private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private val objectDetector = ObjectDetection.getClient(
+        ObjectDetectorOptions.Builder()
+            .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
+            .enableClassification()
+            .build()
+    )
+    
     private var lastAnnouncementTime = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,19 +58,23 @@ class NavigationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setupControls()
         startUdpListener()
         
-        // Initial feedback
-        speak("Navigation active. Scanning for your safety.")
+        // Handle Destination from intent
+        val destination = intent.getStringExtra("DESTINATION")
+        if (!destination.isNullOrBlank()) {
+            binding.geminiInstruction.text = "Navigating to: $destination"
+        }
+        
+        speak("Vision AI active. Scanning for signs and obstacles.")
     }
 
     private fun setupControls() {
         binding.stopNavButton.setOnClickListener {
             handleStop()
-            finish() // Return to Home
+            finish()
         }
-        
         binding.muteButton.setOnClickListener {
             tts?.stop()
-            Toast.makeText(this, "Audio Muted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Guidance Muted", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -95,10 +107,22 @@ class NavigationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            recognizer.process(image)
+            
+            // Run Text Recognition
+            textRecognizer.process(image)
                 .addOnSuccessListener { visionText ->
                     if (visionText.text.isNotBlank()) {
                         handleRecognizedText(visionText.text)
+                    }
+                }
+            
+            // Run Object Detection in parallel (effectively)
+            objectDetector.process(image)
+                .addOnSuccessListener { objects ->
+                    for (obj in objects) {
+                        for (label in obj.labels) {
+                            handleDetectedObject(label.text)
+                        }
                     }
                 }
                 .addOnCompleteListener { imageProxy.close() }
@@ -113,13 +137,22 @@ class NavigationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (currentTime - lastAnnouncementTime < 4000) return
 
         when {
-            upperText.contains("EXIT") -> handleDetection("EXIT DETECTED", "Exit sign ahead. Keep moving forward.", "FORWARD")
-            upperText.contains("STAIRS") -> handleDetection("STAIRS DETECTED", "Stairs detected. Path restricted.", "STOP")
-            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> handleDetection("LIFT DETECTED", "Elevator ahead.", "FORWARD")
-            upperText.contains("ROOM") -> {
-                speak("Room detected.")
-                lastAnnouncementTime = currentTime
-            }
+            upperText.contains("EXIT") -> handleDetection("EXIT SIGN", "Exit detected. Follow the path.", "FORWARD")
+            upperText.contains("STAIRS") -> handleDetection("STAIRS", "Stairs detected. Careful.", "STOP")
+            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> handleDetection("LIFT", "Elevator ahead.", "FORWARD")
+            upperText.contains("RAMP") -> handleDetection("RAMP", "Accessible ramp found.", "FORWARD")
+        }
+    }
+
+    private fun handleDetectedObject(label: String) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastAnnouncementTime < 5000) return
+
+        when (label.lowercase()) {
+            "chair", "table", "desk" -> handleDetection("OBSTACLE", "Furniture ahead. Move left.", "LEFT")
+            "door" -> handleDetection("DOOR", "Door detected in front.", "FORWARD")
+            "person" -> handleDetection("PERSON", "Person ahead. Please be cautious.", "STOP")
+            "stairs" -> handleDetection("STAIRS", "Stairs detected. Path restricted.", "STOP")
         }
     }
 
@@ -139,8 +172,9 @@ class NavigationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.hapticDescription.text = "Haptic: $command Pulse"
         when(command) {
             "FORWARD" -> binding.hapticIcon.setImageResource(R.drawable.ic_haptic_forward)
-            "STOP" -> binding.hapticIcon.setImageResource(R.drawable.ic_volume_up) // Placeholder for stop icon
-            "RIGHT" -> binding.hapticIcon.setImageResource(R.drawable.ic_haptic_forward) // Needs a right icon
+            "LEFT" -> binding.hapticIcon.setImageResource(R.drawable.ic_haptic_forward) // Needs LEFT icon
+            "RIGHT" -> binding.hapticIcon.setImageResource(R.drawable.ic_haptic_forward)
+            "STOP" -> binding.hapticIcon.setImageResource(R.drawable.ic_volume_up)
         }
     }
 
@@ -174,8 +208,9 @@ class NavigationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         when (type) {
             "FORWARD" -> vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
-            "STOP" -> vibrator.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
+            "LEFT" -> vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 150, 100, 150), -1))
             "RIGHT" -> vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 150, 100, 150, 100, 150), -1))
+            "STOP" -> vibrator.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
         }
     }
 
@@ -191,9 +226,8 @@ class NavigationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         val message = String(packet.data, 0, packet.length).trim().uppercase()
                         withContext(Dispatchers.Main) {
                             when (message) {
-                                "RAMP_RIGHT" -> handleDetection("RAMP DETECTED", "Accessible ramp on your right.", "RIGHT")
-                                "STAIRS" -> handleDetection("STAIRS DETECTED", "Stairs detected via beacon.", "STOP")
-                                "EXIT" -> handleDetection("EXIT DETECTED", "Exit path confirmed.", "FORWARD")
+                                "RAMP_RIGHT" -> handleDetection("BEACON", "Ramp detected on right.", "RIGHT")
+                                "DANGER" -> handleDetection("BEACON", "Danger zone ahead. Stop.", "STOP")
                             }
                         }
                     }
