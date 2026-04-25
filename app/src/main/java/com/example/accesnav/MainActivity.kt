@@ -76,9 +76,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         
         // Find map fragment and load map
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
-        mapFragment?.getMapAsync(this) ?: run {
-            Log.e("Maps", "Map Fragment not found!")
-            Toast.makeText(this, "Map Error: Fragment missing", Toast.LENGTH_LONG).show()
+        if (mapFragment != null) {
+            Log.d("Maps", "Map Fragment found successfully!")
+            mapFragment.getMapAsync(this)
+        } else {
+            Log.e("Maps", "CRITICAL: Map Fragment is NULL!")
+            Toast.makeText(this, "Eroare: Fragmentul hărții nu a fost găsit!", Toast.LENGTH_LONG).show()
         }
 
         setupUI()

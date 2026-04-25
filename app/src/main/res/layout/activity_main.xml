@@ -4,17 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
     tools:context=".MainActivity">
 
-    <!-- The Google Map Fragment -->
-    <fragment
+    <!-- The Google Map Fragment using FragmentContainerView -->
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- API KEY WARNING (Visible only if key is missing) -->
+    <!-- API KEY WARNING -->
     <TextView
         android:id="@+id/apiKeyWarning"
         android:layout_width="match_parent"
@@ -28,7 +31,7 @@
         android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Top Overlay (Search & Status) -->
+    <!-- Top Overlay -->
     <LinearLayout
         android:id="@+id/topOverlay"
         android:layout_width="match_parent"
@@ -101,7 +104,6 @@
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Voice Search FAB -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/voiceSearchFab"
             android:layout_width="wrap_content"
@@ -114,7 +116,6 @@
             app:elevation="4dp"
             android:contentDescription="Voice Search" />
 
-        <!-- Info Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/activityCard"
             android:layout_width="match_parent"
@@ -152,7 +153,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Navigation Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/startNavButton"
             android:layout_width="match_parent"
