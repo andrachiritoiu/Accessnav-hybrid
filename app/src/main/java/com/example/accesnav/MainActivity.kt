@@ -26,7 +26,10 @@ import com.google.android.gms.maps.model.PolylineOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
 import java.net.NetworkInterface
+import java.net.URL
 import java.util.*
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -187,26 +190,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                             location?.let {
                                 val currentLatLng = LatLng(it.latitude, it.longitude)
-                                drawAccessibleRoute(currentLatLng, destLatLng)
-                                
-                                val results = FloatArray(1)
-                                android.location.Location.distanceBetween(
-                                    it.latitude, it.longitude,
-                                    address.latitude, address.longitude,
-                                    results
-                                )
-                                val distance = results[0]
-                                val minutes = (distance / 75).toInt() + 1
-                                
-                                val msg = "Traseu configurat. Timp estimat: $minutes minute."
-                                binding.lastActivityText.text = "Est. time: $minutes min"
-                                tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
-                                
-                                val bounds = LatLngBounds.Builder()
-                                    .include(currentLatLng)
-                                    .include(destLatLng)
-                                    .build()
-                                googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 250))
+                                fetchDirections(currentLatLng, destLatLng, destinationName)
                             } ?: run {
                                 googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(destLatLng, 15f))
                             }
@@ -221,14 +205,86 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun drawAccessibleRoute(start: LatLng, end: LatLng) {
-        val polylineOptions = PolylineOptions()
-            .add(start)
-            .add(end)
-            .color(Color.parseColor("#1A73E8"))
-            .width(18f)
-            .geodesic(true)
-        googleMap?.addPolyline(polylineOptions)
+    private fun fetchDirections(origin: LatLng, dest: LatLng, destName: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val apiKey = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData.getString("com.google.android.geo.API_KEY")
+                val urlString = "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${dest.latitude},${dest.longitude}&mode=walking&key=$apiKey"
+                
+                val connection = URL(urlString).openConnection() as HttpURLConnection
+                val data = connection.inputStream.bufferedReader().readText()
+                val json = JSONObject(data)
+                
+                if (json.getString("status") == "OK") {
+                    val route = json.getJSONArray("routes").getJSONObject(0)
+                    val overviewPolyline = route.getJSONObject("overview_polyline").getString("points")
+                    val legs = route.getJSONArray("legs").getJSONObject(0)
+                    val duration = legs.getJSONObject("duration").getString("text")
+                    val distance = legs.getJSONObject("distance").getString("text")
+                    
+                    val path = decodePolyline(overviewPolyline)
+                    
+                    withContext(Dispatchers.Main) {
+                        googleMap?.addPolyline(PolylineOptions()
+                            .addAll(path)
+                            .color(Color.parseColor("#1A73E8"))
+                            .width(18f))
+                        
+                        val msg = "Traseu găsit spre $destName. Distanță: $distance. Timp estimat: $duration."
+                        binding.lastActivityText.text = "Timp: $duration ($distance)"
+                        tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
+                        
+                        val bounds = LatLngBounds.Builder()
+                            .include(origin)
+                            .include(dest)
+                            .build()
+                        googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 250))
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MainActivity, "Eroare Directions API: ${json.getString("status")}", Toast.LENGTH_LONG).show()
+                        drawFallbackRoute(origin, dest) // Fallback to straight line
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Maps", "Directions error: ${e.message}")
+            }
+        }
+    }
+
+    private fun decodePolyline(encoded: String): List<LatLng> {
+        val poly = ArrayList<LatLng>()
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or (b and 0x1f shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlat = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lat += dlat
+            shift = 0
+            result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or (b and 0x1f shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lng += dlng
+            poly.add(LatLng(lat.toDouble() / 1e5, lng.toDouble() / 1e5))
+        }
+        return poly
+    }
+
+    private fun drawFallbackRoute(start: LatLng, end: LatLng) {
+        googleMap?.addPolyline(PolylineOptions().add(start).add(end).color(Color.GRAY).width(12f))
     }
 
     private fun startNavigation() {
