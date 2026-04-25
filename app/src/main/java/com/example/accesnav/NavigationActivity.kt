@@ -77,6 +77,11 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         "outdoor", "indoor", "room", "building", "home", "house", "tree", "plant"
     )
 
+    private val textPersistence = mutableSetOf<String>()
+    private val MAX_TEXT_HISTORY = 10
+    private var lastOCRTime = 0L
+    private val OCR_THROTTLE_MS = 5000L
+
     private val detectionPersistence = mutableMapOf<String, Int>()
     private val PERSISTENCE_THRESHOLD = 2 // Internal ML Kit tracking handles most of this now
     
@@ -367,53 +372,41 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
 
     private fun analyzeText(text: String): Boolean {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastAnnouncementTime < THROTTLE_MS) return false
-        
         val upperText = text.uppercase()
+        
+        // Strictly ignore short or common noise strings
+        if (text.length < 3 || IGNORED_LABELS.any { upperText.contains(it) }) return false
+
+        // Prevent repeated announcements of the same sign
+        if (textPersistence.contains(upperText)) return false
+        
+        // Universal throttle to prevent "talking forever"
+        if (currentTime - lastOCRTime < OCR_THROTTLE_MS) return false
+
         var matched = false
         
-        // Handle Phase Transition
-        if (isExitingHouse && (upperText.contains("EXIT") || upperText.contains("DOOR") || upperText.contains("OUT"))) {
+        // Priority 1: Emergency/Navigation signs
+        if (upperText.contains("EXIT") || upperText.contains("IESIRE")) {
             handleExitReached()
-            return true
-        }
+            lastOCRTime = currentTime
+            matched = true
+        } else {
+            val isKnownSign = upperText.contains("AMFITEATRU") || upperText.contains("SALA") || upperText.contains("ROOM") ||
+                upperText.contains("LAB") || upperText.contains("LECTURE") || upperText.contains("OFFICE") ||
+                upperText.contains("CAUTION") || upperText.contains("WET FLOOR") ||
+                upperText.matches(Regex(".*\\b[A-Z]?[-]?\\d{1,4}\\b.*"))
 
-        // Safety Signs & Room Recognition
-        when {
-            upperText.contains("WET FLOOR") || upperText.contains("CAUTION") -> 
-                handleDetection("HAZARD", "Caution: Wet floor or danger ahead. Move slowly.", "STOP")
-            
-            upperText.contains("STAIRS") || upperText.contains("SCARI") -> 
-                handleDetection("STAIRS", "Stairs detected. Watch your step.", "STOP")
-            
-            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> 
-                handleDetection("LIFT", "Elevator detected ahead.", "FORWARD")
-
-            // Academic/University signs
-            upperText.contains("LAB") || upperText.contains("LABORATOR") ->
-                handleDetection("LAB", "Laboratory detected: $text", "FORWARD")
-            
-            upperText.contains("HALL") || upperText.contains("AMFITEATRU") || upperText.contains("LECTURE") ->
-                handleDetection("ACADEMIC", "Lecture hall or amfiteatru ahead.", "FORWARD")
-
-            upperText.contains("LIBRARY") || upperText.contains("BIBLIOTECA") ->
-                handleDetection("INFO", "Library nearby.", "FORWARD")
-            
-            upperText.contains("SECRETARY") || upperText.contains("SECRETARIAT") ->
-                handleDetection("INFO", "Secretariat detected.", "FORWARD")
-
-            upperText.contains("TOILET") || upperText.contains("WC") || upperText.contains("RESTROOM") ->
-                handleDetection("INFO", "Restroom nearby.", "FORWARD")
-
-            // Regex for Room/Office detection (e.g. Room 301, Office A, S-02)
-            upperText.contains("ROOM") || upperText.contains("SALA") || upperText.contains("OFFICE") || 
-            upperText.matches(Regex(".*\\b[A-Z]?[-]?\\d{3}\\b.*")) -> {
-                val roomMsg = "Detected: $text"
-                handleDetection("ROOM", roomMsg, "FORWARD")
-                saveHistory("TEXT", roomMsg)
+            if (isKnownSign) {
+                handleDetection("SIGN", "Sign detected: $text", "FORWARD")
+                
+                // Add to persistence and set throttle
+                if (textPersistence.size > MAX_TEXT_HISTORY) textPersistence.clear()
+                textPersistence.add(upperText)
+                lastOCRTime = currentTime
                 matched = true
             }
         }
+        
         return matched
     }
 
@@ -537,18 +530,23 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
         
-        // Dynamic direction logic
         val third = imageWidth / 3
-        val instruction = when {
-            centerX < third + 100 -> "$label on left. Move right."
-            centerX > 2 * third - 100 -> "$label on right. Move left."
-            else -> "$label ahead. Stop or move around."
-        }
+        val instruction: String
+        val command: String
         
-        val command = when {
-            centerX < third + 100 -> "RIGHT"
-            centerX > 2 * third - 100 -> "LEFT"
-            else -> "STOP"
+        when {
+            centerX < third -> {
+                instruction = "$label on your left. Turn slightly right to avoid."
+                command = "RIGHT"
+            }
+            centerX > 2 * third -> {
+                instruction = "$label on your right. Turn slightly left to avoid."
+                command = "LEFT"
+            }
+            else -> {
+                instruction = "Immediate obstacle: $label ahead. Stop and find a path."
+                command = "STOP"
+            }
         }
         
         handleDetection("OBSTACLE", instruction, command)
@@ -565,10 +563,20 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         lastAnnouncementTime = System.currentTimeMillis()
         lifecycleScope.launch(Dispatchers.Main) {
             binding.detectionBadge.text = badge
-            binding.geminiInstruction.text = instruction
+            
+            val directionSuffix = when (command) {
+                "LEFT" -> ". Turn left."
+                "RIGHT" -> ". Turn right."
+                "STOP" -> ". Stop."
+                "FORWARD" -> ". Go forward."
+                else -> ""
+            }
+            
+            val finalInstruction = instruction + directionSuffix
+            binding.geminiInstruction.text = finalInstruction
             
             // Speak in English
-            tts?.speak(instruction, TextToSpeech.QUEUE_FLUSH, null, null)
+            tts?.speak(finalInstruction, TextToSpeech.QUEUE_FLUSH, null, null)
             
             // Haptics: 1 for LEFT, 2 for RIGHT
             vibrateCommand(command)
@@ -586,7 +594,8 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
             "LEFT" -> WearService.PATH_LEFT
             "RIGHT" -> WearService.PATH_RIGHT
             "STOP" -> WearService.PATH_DANGER
-            else -> WearService.PATH_FORWARD
+            "FORWARD" -> WearService.PATH_FORWARD
+            else -> WearService.PATH_SHORT
         }
         wearService.sendHapticSignal(path)
     }

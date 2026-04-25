@@ -198,8 +198,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     startActivity(Intent(this, NavigationActivity::class.java))
                     true
                 }
-                R.id.nav_history -> {
-                    startActivity(Intent(this, HistoryActivity::class.java))
+                R.id.nav_describe -> {
+                    val intent = Intent(this, NavigationActivity::class.java)
+                    intent.putExtra("DESCRIBE_NOW", true)
+                    startActivity(intent)
                     true
                 }
                 else -> true

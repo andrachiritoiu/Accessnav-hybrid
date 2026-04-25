@@ -85,13 +85,6 @@
                             android:textColor="@color/text_primary"
                             android:textStyle="bold" />
                             
-                        <View
-                            android:layout_width="8dp"
-                            android:layout_height="8dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_toEndOf="@id/statusText"
-                            android:layout_centerVertical="true"
-                            android:background="@drawable/shape_pulse_dot" />
                             
                         <ImageView
                             android:layout_width="60dp"
@@ -173,7 +166,7 @@
                                 android:id="@+id/guidanceText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Turn right in 20 meters"
+                                android:text="Waiting for destination..."
                                 android:textColor="@color/text_primary"
                                 android:textSize="18sp"
                                 android:textStyle="bold" />
@@ -183,7 +176,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="Accessible ramp on your right."
+                                android:text="Start a route to see guidance"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -243,7 +236,7 @@
         android:background="@color/white"
         app:itemIconTint="@color/google_blue"
         app:itemTextColor="@color/google_blue"
-        app:menu="@menu/bottom_nav_menu"
+        app:menu="@menu/bottom_nav_menu_no_history"
         app:labelVisibilityMode="labeled" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

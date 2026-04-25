@@ -5,21 +5,21 @@ import com.google.mlkit.vision.objects.DetectedObject
 
 /**
  * Robust Detection Pipeline for Assistive Navigation.
- * Follows a multi-layered approach: Analyze -> Filter -> Decide.
+ * Optimized for sensitivity and directional guidance.
  */
 class DetectionPipeline(
     private val screenWidth: Int,
     private val screenHeight: Int
 ) {
     private val persistenceMap = mutableMapOf<Int, Int>()
-    private val persistenceThreshold = 3
-    private val confidenceThreshold = 0.6f
+    private val persistenceThreshold = 2 // Lowered for faster detection
+    private val confidenceThreshold = 0.45f // Increased sensitivity
     
-    // Danger Zone: 30%-70% width, 60%-100% height (bottom center)
+    // Expanded Danger Zone for better coverage (10%-90% width)
     private val dangerZone = Rect(
-        (screenWidth * 0.3).toInt(),
-        (screenHeight * 0.6).toInt(),
-        (screenWidth * 0.7).toInt(),
+        (screenWidth * 0.1).toInt(),
+        (screenHeight * 0.4).toInt(),
+        (screenWidth * 0.9).toInt(),
         screenHeight
     )
 
@@ -36,7 +36,6 @@ class DetectionPipeline(
     fun processObjects(objects: List<DetectedObject>): List<DetectionResult> {
         val results = mutableListOf<DetectionResult>()
         
-        // Cleanup persistence for lost objects (simplified for demo)
         if (objects.isEmpty()) {
             persistenceMap.clear()
             return emptyList()
@@ -56,21 +55,21 @@ class DetectionPipeline(
 
             // 3. Spatial Filtering (Danger Zone)
             val box = obj.boundingBox
-            if (!Rect.intersects(dangerZone, box)) {
-                // If it's not in the danger zone, we might still care if it's very large
-                // but for now, we follow the "Danger Zone" requirement strictly.
-                continue
-            }
+            if (!Rect.intersects(dangerZone, box)) continue
 
             // 4. Proximity Estimation
             val areaPercent = (box.width() * box.height()).toFloat() / (screenWidth * screenHeight)
-            val isClose = areaPercent > 0.15f
+            val isClose = areaPercent > 0.12f
 
             // 5. Decision Mapping
             val centerX = box.centerX()
             val decision = when {
+                // Priority: People
+                topLabel.text.lowercase().contains("person") || 
+                topLabel.text.lowercase().contains("man") || 
+                topLabel.text.lowercase().contains("woman") -> Decision.PERSON_AHEAD
+                
                 isClose -> Decision.OBSTACLE_CLOSE
-                topLabel.text.lowercase().contains("person") -> Decision.PERSON_AHEAD
                 centerX < screenWidth / 3 -> Decision.OBSTACLE_LEFT
                 centerX > 2 * screenWidth / 3 -> Decision.OBSTACLE_RIGHT
                 else -> Decision.OBSTACLE_AHEAD
@@ -79,6 +78,7 @@ class DetectionPipeline(
             results.add(DetectionResult(decision, topLabel.text, topLabel.confidence))
         }
         
-        return results
+        // Prioritize Person_Ahead in the result list
+        return results.sortedByDescending { it.decision == Decision.PERSON_AHEAD }
     }
 }
