@@ -57,9 +57,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize Maps SDK with latest renderer
-        MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST) { 
-            Log.d("Maps", "Renderer initialized")
+        // Initialize Maps SDK with latest renderer and error handling
+        try {
+            MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST) { renderer ->
+                when (renderer) {
+                    MapsInitializer.Renderer.LATEST -> Log.d("Maps", "The latest version of the renderer is used.")
+                    MapsInitializer.Renderer.LEGACY -> Log.d("Maps", "The legacy version of the renderer is used.")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Maps", "MapsInitializer failed: ${e.message}")
         }
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -95,8 +102,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        Log.d("Maps", "Map is ready!")
+        Log.d("Maps", "Map is ready and callback received!")
         
+        googleMap?.setOnMapLoadedCallback {
+            Log.d("Maps", "Map fully loaded")
+            Toast.makeText(this, "Harta Google s-a încărcat cu succes!", Toast.LENGTH_SHORT).show()
+        }
+
         // High-contrast accessibility settings
         googleMap?.uiSettings?.isZoomControlsEnabled = true
         googleMap?.uiSettings?.isMyLocationButtonEnabled = true
