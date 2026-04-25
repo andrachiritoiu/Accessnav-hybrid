@@ -83,8 +83,18 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         startUdpListener()
         startLocationUpdates()
         
-        speak("Phase 1: Exiting house. Please use the camera to find the exit door.")
         binding.geminiInstruction.text = "Searching for Exit..."
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            tts?.apply {
+                language = Locale.US
+                setPitch(1.0f)
+                setSpeechRate(0.9f)
+                speak("AI Navigation active. Phase 1: Exiting house. Please find the exit door.", TextToSpeech.QUEUE_FLUSH, null, null)
+            }
+        }
     }
 
     private fun parseSteps(json: String) {
@@ -225,7 +235,11 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         lifecycleScope.launch(Dispatchers.Main) {
             binding.detectionBadge.text = badge
             binding.geminiInstruction.text = instruction
-            speak(instruction)
+            
+            // Speak in English
+            tts?.speak(instruction, TextToSpeech.QUEUE_FLUSH, null, null)
+            
+            // Haptics: 1 for LEFT, 2 for RIGHT
             vibrateCommand(command)
         }
     }
@@ -238,13 +252,18 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
         
         val pattern = when (type) {
-            "LEFT" -> longArrayOf(0, 300) // 1 pulse
-            "RIGHT" -> longArrayOf(0, 300, 150, 300) // 2 pulses
-            "STOP" -> longArrayOf(0, 700)
-            else -> longArrayOf(0, 100)
+            "LEFT" -> longArrayOf(0, 300) // 1 pulse for Left
+            "RIGHT" -> longArrayOf(0, 300, 150, 300) // 2 pulses for Right
+            "STOP" -> longArrayOf(0, 800) // Long pulse for stop
+            else -> longArrayOf(0, 100) // Short pulse for forward
         }
         
-        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        if (Build.VERSION.SDK_INT >= 26) {
+            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
+        }
     }
 
     private fun startUdpListener() {
@@ -265,13 +284,6 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         }
     }
 
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            tts?.language = Locale.US
-            tts?.setPitch(1.0f)
-            tts?.setSpeechRate(0.9f)
-        }
-    }
 
     override fun onDestroy() {
         cameraExecutor.shutdown()
