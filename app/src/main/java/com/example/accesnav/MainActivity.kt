@@ -71,6 +71,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.US
+                setupTTSListener()
                 tts?.speak("AccessNav is ready. Please say your destination.", TextToSpeech.QUEUE_FLUSH, null, "READY")
             }
         }
@@ -110,6 +111,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         } else {
             locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
         }
+    }
+
+    private fun setupTTSListener() {
+        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            override fun onDone(utteranceId: String?) {
+                if (utteranceId == "READY") {
+                    runOnUiThread { startVoiceSearch() }
+                }
+            }
+            override fun onError(utteranceId: String?) {}
+        })
     }
 
     private fun setupUI() {
