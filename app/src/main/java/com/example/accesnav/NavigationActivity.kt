@@ -253,7 +253,11 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         speak("You have exited the house. Phase 2: Outdoor navigation started.")
         binding.detectionBadge.text = "OUTDOOR"
         
-        // Start providing Google Directions
+        // Sync the switch UI
+        binding.modeSwitch.isChecked = true
+        binding.modeLabel.text = "OUTDOOR MODE"
+        binding.modeSwitch.contentDescription = "Outdoor Mode Active"
+        
         provideNextGoogleStep()
     }
 
