@@ -74,6 +74,16 @@
                 android:layout_height="56dp"
                 app:title="AccessNav"
                 app:titleCentered="true">
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/modeSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="16dp"
+                    android:checked="false"
+                    app:thumbIcon="@drawable/ic_navigation"
+                    android:contentDescription="Navigation Mode Toggle" />
                 
                 <ImageButton
                     android:id="@+id/settingsButton"

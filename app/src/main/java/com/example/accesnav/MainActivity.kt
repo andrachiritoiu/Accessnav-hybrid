@@ -333,6 +333,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         val intent = Intent(this, NavigationActivity::class.java)
         intent.putExtra("DESTINATION", binding.destinationText.text.toString())
         intent.putExtra("STEPS_JSON", stepsJson)
+        intent.putExtra("START_OUTDOOR", binding.modeSwitch.isChecked)
         startActivity(intent)
         resetUI()
         

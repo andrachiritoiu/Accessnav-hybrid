@@ -84,7 +84,12 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         startUdpListener()
         startLocationUpdates()
         
-        binding.geminiInstruction.text = "Searching for Exit..."
+        val startOutdoor = intent.getBooleanExtra("START_OUTDOOR", false)
+        if (startOutdoor) {
+            handleExitReached()
+        } else {
+            binding.geminiInstruction.text = "Searching for Exit..."
+        }
     }
 
     override fun onInit(status: Int) {
@@ -93,7 +98,11 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
                 language = Locale.US
                 setPitch(1.0f)
                 setSpeechRate(0.9f)
-                speak("AI Navigation active. Phase 1: Exiting house. Please find the exit door.", TextToSpeech.QUEUE_FLUSH, null, null)
+                
+                val startOutdoor = intent.getBooleanExtra("START_OUTDOOR", false)
+                val msg = if (startOutdoor) "Outdoor mode active. Following Google directions." 
+                          else "AI Navigation active. Phase 1: Exiting house. Please find the exit door."
+                speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
             }
         }
     }
