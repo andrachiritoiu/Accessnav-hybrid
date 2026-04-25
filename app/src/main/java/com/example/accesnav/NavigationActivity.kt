@@ -184,14 +184,28 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         
         val upperText = text.uppercase()
         
+        // Handle Phase Transition
         if (isExitingHouse && (upperText.contains("EXIT") || upperText.contains("DOOR") || upperText.contains("OUT"))) {
             handleExitReached()
             return
         }
 
+        // Safety Signs & Room Recognition
         when {
-            upperText.contains("STAIRS") -> handleDetection("STAIRS", "Caution: Stairs detected.", "STOP")
-            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> handleDetection("LIFT", "Elevator detected.", "FORWARD")
+            upperText.contains("WET FLOOR") || upperText.contains("CAUTION") -> 
+                handleDetection("HAZARD", "Caution: Wet floor or danger ahead. Move slowly.", "STOP")
+            
+            upperText.contains("STAIRS") || upperText.contains("SCARI") -> 
+                handleDetection("STAIRS", "Stairs detected. Watch your step.", "STOP")
+            
+            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> 
+                handleDetection("LIFT", "Elevator detected ahead.", "FORWARD")
+
+            // Regex for Room/Office detection (e.g. Room 301, Office A)
+            upperText.contains("ROOM") || upperText.contains("OFFICE") || upperText.matches(Regex(".*\\b\\d{3}\\b.*")) -> {
+                val roomMsg = "Detected: $text"
+                handleDetection("ROOM", roomMsg, "FORWARD")
+            }
         }
     }
 
@@ -227,7 +241,9 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
     private fun handleObstacleDetected(label: String) {
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
-        handleDetection("OBSTACLE", "Obstacle in path.", "STOP")
+        
+        // Suggest detour: "Move left"
+        handleDetection("OBSTACLE", "$label in path. Move left to avoid it.", "STOP")
     }
 
     private fun handleDetection(badge: String, instruction: String, command: String) {
