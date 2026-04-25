@@ -8,6 +8,8 @@ import android.location.Geocoder
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -97,6 +99,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             val apiKey = info.metaData.getString("com.google.android.geo.API_KEY")
             if (apiKey == "YOUR_API_KEY_HERE" || apiKey.isNullOrBlank()) {
                 binding.apiKeyWarning.visibility = View.VISIBLE
+                mainHandler.postDelayed({
+                    tts?.speak("Warning: Google Maps API key is missing. Navigation will not work correctly.", TextToSpeech.QUEUE_ADD, null, null)
+                }, 2000)
             }
         } catch (e: Exception) { }
     }
@@ -283,7 +288,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun vibrateCommand(command: String) {
-        val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+        val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
         val pattern = when (command) {
             "LEFT" -> longArrayOf(0, 300) // 1 pulse for Left
             "RIGHT" -> longArrayOf(0, 300, 150, 300) // 2 pulses for Right
@@ -291,12 +296,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             else -> longArrayOf(0, 150) // Short pulse for forward
         }
         
-        if (Build.VERSION.SDK_INT >= 26) {
-            vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(pattern, -1)
-        }
+        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
     }
 
     private fun decodePolyline(encoded: String): List<LatLng> {

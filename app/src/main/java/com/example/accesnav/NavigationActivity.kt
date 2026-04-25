@@ -149,6 +149,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         binding.muteButton.setOnClickListener { tts?.stop() }
         
         binding.modeSwitch.setOnCheckedChangeListener { _, isChecked ->
+            vibrateCommand("FORWARD") // Short vibration for feedback
             if (isChecked) {
                 // Outdoor Mode
                 isExitingHouse = false
@@ -333,12 +334,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
             else -> longArrayOf(0, 150) // Short pulse for forward
         }
         
-        if (Build.VERSION.SDK_INT >= 26) {
-            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(pattern, -1)
-        }
+        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
     }
 
     private fun startUdpListener() {
