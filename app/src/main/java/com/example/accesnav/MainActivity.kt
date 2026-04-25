@@ -28,6 +28,8 @@ import com.google.android.gms.maps.model.PolylineOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.speech.tts.UtteranceProgressListener
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.NetworkInterface
 import java.net.URL
@@ -179,7 +181,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     
                     withContext(Dispatchers.Main) {
                         googleMap?.addPolyline(PolylineOptions().addAll(path).color(Color.parseColor("#1A73E8")).width(18f))
-                        val msg = "Distance: $distance. Travel time: $duration. Double tap the screen to start now."
+                        val msg = "Distance: $distance. Travel time: $duration. Double tap the screen to start navigation now."
                         binding.lastActivityText.text = "$duration ($distance)"
                         
                         showConfirmationUI(msg)
