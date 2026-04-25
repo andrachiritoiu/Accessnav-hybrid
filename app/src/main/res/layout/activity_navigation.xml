@@ -13,6 +13,25 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Mini Map Overlay (Top Right) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/miniMapCard"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:layout_margin="16dp"
+        android:layout_gravity="top|end"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp"
+        app:strokeColor="#FFFFFF"
+        app:strokeWidth="2dp">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/miniMap"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Top Overlay Controls -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -28,33 +47,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             android:contentDescription="Mute Voice" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@drawable/bg_status_pill"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
-            android:gravity="center"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
-            
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@drawable/ic_watch"
-                app:tint="#00E676" />
-            
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Watch Active"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Bottom Sheet (Instruction Panel) -->

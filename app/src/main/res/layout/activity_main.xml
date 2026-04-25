@@ -45,6 +45,7 @@
         app:backgroundTint="#FF9800"
         android:textColor="#FFFFFF"
         android:elevation="12dp"
+        android:alpha="0.7"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

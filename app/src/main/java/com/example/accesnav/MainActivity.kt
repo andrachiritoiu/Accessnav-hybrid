@@ -32,6 +32,7 @@ import android.speech.tts.UtteranceProgressListener
 import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.HttpURLConnection
 import java.net.NetworkInterface
 import java.net.URL
 import java.util.*
@@ -73,9 +74,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
+                tts?.language = Locale.forLanguageTag("ro-RO")
                 setupTTSListener()
-                tts?.speak("AccessNav is ready. Please say your destination.", TextToSpeech.QUEUE_FLUSH, null, "READY")
+                tts?.speak("AccessNav este pregătit. Vă rog să spuneți destinația.", TextToSpeech.QUEUE_FLUSH, null, "READY")
             }
         }
         
@@ -124,6 +125,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     runOnUiThread { startVoiceSearch() }
                 }
             }
+
+            @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {}
         })
     }
@@ -131,7 +134,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun setupUI() {
         binding.startNavButton.setOnClickListener { startNavigation() }
         binding.voiceSearchFab.setOnClickListener { startVoiceSearch() }
-        binding.settingsButton.setOnClickListener { Toast.makeText(this, "Settings Ready", Toast.LENGTH_SHORT).show() }
+        binding.settingsButton.setOnClickListener { Toast.makeText(this, "Setări pregătite", Toast.LENGTH_SHORT).show() }
         
         binding.confirmationButton.setOnClickListener {
             cancelTimeout()
@@ -139,14 +142,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         val ip = getLocalIpAddress()
-        binding.lastActivityText.text = "IP: $ip • Ready"
+        binding.lastActivityText.text = "IP: $ip • Pregătit"
     }
 
     private fun startVoiceSearch() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US)
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Where to?")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.forLanguageTag("ro-RO"))
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Unde doriți să mergeți?")
         }
         try { voiceLauncher.launch(intent) } catch (e: Exception) { }
     }
@@ -167,15 +170,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         googleMap?.clear()
                         googleMap?.addMarker(MarkerOptions().position(destLatLng).title(destinationName))
                         
-                        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                            location?.let {
-                                val currentLatLng = LatLng(it.latitude, it.longitude)
-                                fetchDirections(currentLatLng, destLatLng)
+                        if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                                location?.let {
+                                    val currentLatLng = LatLng(it.latitude, it.longitude)
+                                    fetchDirections(currentLatLng, destLatLng)
+                                }
                             }
                         }
                     }
                 }
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error selecting destination", e)
+            }
         }
     }
 
@@ -185,7 +192,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 val apiKey = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData.getString("com.google.android.geo.API_KEY")
                 val urlString = "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${dest.latitude},${dest.longitude}&mode=walking&key=$apiKey"
                 val connection = URL(urlString).openConnection() as HttpURLConnection
-                val json = JSONObject(connection.inputStream.bufferedReader().readText())
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(responseText)
                 
                 if (json.getString("status") == "OK") {
                     val route = json.getJSONArray("routes").getJSONObject(0)
@@ -197,7 +205,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     
                     withContext(Dispatchers.Main) {
                         googleMap?.addPolyline(PolylineOptions().addAll(path).color(Color.parseColor("#1A73E8")).width(18f))
-                        val msg = "Distance: $distance. Travel time: $duration. Double tap the screen to start navigation now."
+                        val msg = "Distanța: $distance. Timp de călătorie: $duration. Atingeți de două ori ecranul pentru a porni navigarea acum."
                         binding.lastActivityText.text = "$duration ($distance)"
                         
                         showConfirmationUI(msg)
@@ -235,8 +243,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.topOverlay.visibility = View.VISIBLE
         binding.destinationText.visibility = View.GONE
         googleMap?.clear()
-        binding.lastActivityText.text = "System Ready"
-        tts?.speak("Request timed out. Returning to home.", TextToSpeech.QUEUE_FLUSH, null, null)
+        binding.lastActivityText.text = "Sistem Pregătit"
+        tts?.speak("Solicitarea a expirat. Revenire la ecranul principal.", TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun startUdpListener() {
@@ -268,12 +276,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun handleBeaconMessage(message: String) {
         val (status, speech, command) = when (message) {
-            "RAMP_RIGHT" -> Triple("Accessible ramp detected on your right.", "Accessible ramp detected on your right.", "RIGHT")
-            "STAIRS_AHEAD", "STAIRS" -> Triple("Stairs ahead. Path may not be accessible.", "Stairs ahead. This path may not be accessible.", "STOP")
-            "LOW_LIGHT" -> Triple("Low visibility area. Proceed carefully.", "Low visibility area detected. Proceed carefully.", "FORWARD")
-            "ACCESSIBLE_EXIT_RIGHT" -> Triple("Accessible exit on your right.", "Accessible exit on your right.", "RIGHT")
-            "STOP" -> Triple("Stop. Unsafe path ahead.", "Stop. Unsafe path ahead.", "STOP")
-            else -> Triple("Beacon: $message", "Building update received.", "FORWARD")
+            "RAMP_RIGHT" -> Triple("Rampă accesibilă detectată pe dreapta.", "Rampă accesibilă detectată pe dreapta.", "RIGHT")
+            "STAIRS_AHEAD", "STAIRS" -> Triple("Scări înainte. Calea ar putea să nu fie accesibilă.", "Scări înainte. Această cale ar putea să nu fie accesibilă.", "STOP")
+            "LOW_LIGHT" -> Triple("Zonă cu vizibilitate redusă. Mergeți cu atenție.", "Zonă cu vizibilitate redusă detectată. Mergeți cu atenție.", "FORWARD")
+            "ACCESSIBLE_EXIT_RIGHT" -> Triple("Ieșire accesibilă pe dreapta.", "Ieșire accesibilă pe dreapta.", "RIGHT")
+            "STOP" -> Triple("Stop. Cale nesigură înainte.", "Stop. Cale nesigură înainte.", "STOP")
+            else -> Triple("Beacon: $message", "Actualizare clădire primită.", "FORWARD")
         }
 
         binding.lastActivityText.text = status
@@ -287,7 +295,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun vibrateCommand(command: String) {
-        val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+        val vibrator = getSystemService(android.os.Vibrator::class.java)
         val pattern = when (command) {
             "FORWARD" -> longArrayOf(0, 150)
             "LEFT" -> longArrayOf(0, 120, 120, 120)
@@ -296,12 +304,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             else -> longArrayOf(0, 100)
         }
 
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(pattern, -1)
-        }
+        vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
     }
 
     private fun decodePolyline(encoded: String): List<LatLng> {
@@ -340,7 +343,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         resetUI()
         
         startUdpListener()
-        tts?.speak("AccessNav started. Listening for smart building beacons.", TextToSpeech.QUEUE_FLUSH, null, null)
+        tts?.speak("AccessNav a pornit. Ascult pentru balizele clădirii inteligente.", TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun getLocalIpAddress(): String {
