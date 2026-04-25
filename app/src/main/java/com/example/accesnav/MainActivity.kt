@@ -199,6 +199,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val legs = route.getJSONArray("legs").getJSONObject(0)
                     val duration = legs.getJSONObject("duration").getString("text")
                     val distance = legs.getJSONObject("distance").getString("text")
+                    val stepsJson = legs.getJSONArray("steps").toString()
                     val path = decodePolyline(overviewPolyline)
                     
                     withContext(Dispatchers.Main) {
@@ -206,7 +207,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         val msg = "I have found a route. The distance is $distance, and the travel time is $duration. Please double tap the screen if you would like to start the navigation now."
                         binding.lastActivityText.text = "$duration ($distance)"
                         
-                        showConfirmationUI(msg)
+                        showConfirmationUI(msg, stepsJson)
                         
                         val bounds = LatLngBounds.Builder().include(origin).include(dest).build()
                         googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 250))
@@ -216,12 +217,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun showConfirmationUI(message: String) {
+    private fun showConfirmationUI(message: String, stepsJson: String = "") {
         tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "CONFIRM")
         binding.confirmationButton.visibility = View.VISIBLE
         binding.bottomControls.visibility = View.GONE
         binding.topOverlay.visibility = View.GONE
         
+        binding.confirmationButton.setTag(R.id.confirmationButton, stepsJson)
         startTimeout()
     }
 
@@ -322,8 +324,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun startNavigation() {
+        val stepsJson = binding.confirmationButton.getTag(R.id.confirmationButton) as? String ?: ""
         val intent = Intent(this, NavigationActivity::class.java)
         intent.putExtra("DESTINATION", binding.destinationText.text.toString())
+        intent.putExtra("STEPS_JSON", stepsJson)
         startActivity(intent)
         resetUI()
         

@@ -29,6 +29,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import org.json.JSONArray
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.util.*
@@ -55,7 +56,11 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
     )
     
     private var lastAnnouncementTime = 0L
-    private val THROTTLE_MS = 2000L // Requirement 6: Max one alert every 2 seconds
+    private val THROTTLE_MS = 2000L
+    
+    private var isExitingHouse = true
+    private val navigationSteps = mutableListOf<String>()
+    private var currentStepIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,23 +74,34 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         val mapFragment = supportFragmentManager.findFragmentById(R.id.miniMap) as? SupportMapFragment
         mapFragment?.getMapAsync(this)
 
+        // Parse Google Steps
+        val stepsJson = intent.getStringExtra("STEPS_JSON") ?: ""
+        parseSteps(stepsJson)
+
         startCamera()
         setupControls()
         startUdpListener()
         startLocationUpdates()
         
-        val destination = intent.getStringExtra("DESTINATION") ?: "Unknown"
-        binding.geminiInstruction.text = "Navigating to: $destination"
-        
-        speak("Vision navigation started. Looking for obstacles and signs.")
+        speak("Phase 1: Exiting house. Please use the camera to find the exit door.")
+        binding.geminiInstruction.text = "Searching for Exit..."
+    }
+
+    private fun parseSteps(json: String) {
+        try {
+            val array = JSONArray(json)
+            for (i in 0 until array.length()) {
+                val step = array.getJSONObject(i)
+                val instruction = step.getString("html_instructions")
+                    .replace(Regex("<.*?>"), "") // Strip HTML tags
+                navigationSteps.add(instruction)
+            }
+        } catch (e: Exception) { }
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        googleMap?.uiSettings?.apply {
-            isMyLocationButtonEnabled = false
-            isZoomControlsEnabled = false
-        }
+        googleMap?.uiSettings?.isZoomControlsEnabled = false
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             googleMap?.isMyLocationEnabled = true
         }
@@ -117,17 +133,10 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+            val preview = Preview.Builder().build().also { it.setSurfaceProvider(binding.viewFinder.surfaceProvider) }
+            val imageAnalyzer = ImageAnalysis.Builder().build().also {
+                it.setAnalyzer(cameraExecutor) { imageProxy -> processImageProxy(imageProxy) }
             }
-            val imageAnalyzer = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(cameraExecutor) { imageProxy ->
-                        processImageProxy(imageProxy)
-                    }
-                }
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalyzer)
@@ -142,26 +151,18 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
             val imageWidth = image.width
             
-            // Run Text Recognition
-            textRecognizer.process(image)
-                .addOnSuccessListener { visionText ->
-                    if (visionText.text.isNotBlank()) {
-                        analyzeText(visionText.text)
-                    }
-                }
+            textRecognizer.process(image).addOnSuccessListener { visionText ->
+                if (visionText.text.isNotBlank()) analyzeText(visionText.text)
+            }
             
-            // Run Object Detection
-            objectDetector.process(image)
-                .addOnSuccessListener { objects ->
-                    for (obj in objects) {
-                        // Requirement 10: Center third detection
-                        val centerX = obj.boundingBox.centerX()
-                        if (centerX > imageWidth / 3 && centerX < 2 * imageWidth / 3) {
-                            handleObstacleDetected(obj.labels.firstOrNull()?.text ?: "Object")
-                        }
+            objectDetector.process(image).addOnSuccessListener { objects ->
+                for (obj in objects) {
+                    val centerX = obj.boundingBox.centerX()
+                    if (centerX > imageWidth / 3 && centerX < 2 * imageWidth / 3) {
+                        handleObstacleDetected(obj.labels.firstOrNull()?.text ?: "Obstacle")
                     }
                 }
-                .addOnCompleteListener { imageProxy.close() }
+            }.addOnCompleteListener { imageProxy.close() }
         } else {
             imageProxy.close()
         }
@@ -172,30 +173,51 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
         
         val upperText = text.uppercase()
+        
+        if (isExitingHouse && (upperText.contains("EXIT") || upperText.contains("DOOR") || upperText.contains("OUT"))) {
+            handleExitReached()
+            return
+        }
+
         when {
-            upperText.contains("EXIT") -> handleExitDetected()
-            upperText.contains("STAIRS") || upperText.contains("SCARI") -> handleStairsDetected()
-            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> handleLiftDetected()
-            upperText.contains("ROOM") -> handleDetection("ROOM", "Room number detected.", "FORWARD")
+            upperText.contains("STAIRS") -> handleDetection("STAIRS", "Caution: Stairs detected.", "STOP")
+            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> handleDetection("LIFT", "Elevator detected.", "FORWARD")
         }
     }
 
-    private fun handleExitDetected() {
-        handleDetection("EXIT", "Exit sign detected ahead.", "FORWARD")
+    private fun handleExitReached() {
+        isExitingHouse = false
+        speak("You have exited the house. Phase 2: Outdoor navigation started.")
+        binding.detectionBadge.text = "OUTDOOR"
+        
+        // Start providing Google Directions
+        provideNextGoogleStep()
     }
 
-    private fun handleStairsDetected() {
-        handleDetection("STAIRS", "Caution: Stairs detected.", "STOP")
+    private fun provideNextGoogleStep() {
+        if (currentStepIndex < navigationSteps.size) {
+            val instruction = navigationSteps[currentStepIndex]
+            handleDetection("NAV", instruction, getCommandFromInstruction(instruction))
+            currentStepIndex++
+            
+            // For demo, we might auto-trigger next step or wait for location
+        } else {
+            speak("You have reached your destination.")
+        }
     }
 
-    private fun handleLiftDetected() {
-        handleDetection("LIFT", "Elevator or lift detected.", "FORWARD")
+    private fun getCommandFromInstruction(text: String): String {
+        return when {
+            text.lowercase().contains("left") -> "LEFT"
+            text.lowercase().contains("right") -> "RIGHT"
+            else -> "FORWARD"
+        }
     }
 
     private fun handleObstacleDetected(label: String) {
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
-        handleDetection("OBSTACLE", "$label detected in your path.", "STOP")
+        handleDetection("OBSTACLE", "Obstacle in path.", "STOP")
     }
 
     private fun handleDetection(badge: String, instruction: String, command: String) {
@@ -204,7 +226,6 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
             binding.detectionBadge.text = badge
             binding.geminiInstruction.text = instruction
             speak(instruction)
-            sendWatchCommand(command)
             vibrateCommand(command)
         }
     }
@@ -213,34 +234,17 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
-    private fun sendWatchCommand(command: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val nodes = Wearable.getNodeClient(this@NavigationActivity).connectedNodes.await()
-                for (node in nodes) {
-                    Wearable.getMessageClient(this@NavigationActivity)
-                        .sendMessage(node.id, "/nav/$command", command.toByteArray())
-                }
-            } catch (e: Exception) { }
-        }
-    }
-
     private fun vibrateCommand(type: String) {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(VibratorManager::class.java)
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(Vibrator::class.java)
+        val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        
+        val pattern = when (type) {
+            "LEFT" -> longArrayOf(0, 300) // 1 pulse
+            "RIGHT" -> longArrayOf(0, 300, 150, 300) // 2 pulses
+            "STOP" -> longArrayOf(0, 700)
+            else -> longArrayOf(0, 100)
         }
         
-        vibrator?.let {
-            when (type) {
-                "FORWARD" -> it.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
-                "STOP" -> it.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
-                else -> it.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-            }
-        }
+        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
     }
 
     private fun startUdpListener() {
@@ -254,10 +258,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
                     socket.receive(packet)
                     val message = String(packet.data, 0, packet.length).trim().uppercase()
                     withContext(Dispatchers.Main) {
-                        when (message) {
-                            "RAMP_RIGHT" -> handleDetection("BEACON", "Ramp detected on the right.", "RIGHT")
-                            "DANGER" -> handleDetection("BEACON", "Danger ahead. Stop.", "STOP")
-                        }
+                        if (message == "RAMP_RIGHT") handleDetection("BEACON", "Ramp detected.", "RIGHT")
                     }
                 }
             } catch (e: Exception) { }
