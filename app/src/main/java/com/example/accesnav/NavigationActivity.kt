@@ -165,14 +165,22 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
                 if (visionText.text.isNotBlank()) analyzeText(visionText.text)
             }
             
-            objectDetector.process(image).addOnSuccessListener { objects ->
-                for (obj in objects) {
-                    val centerX = obj.boundingBox.centerX()
-                    if (centerX > imageWidth / 3 && centerX < 2 * imageWidth / 3) {
-                        handleObstacleDetected(obj.labels.firstOrNull()?.text ?: "Obstacle")
+            // Run Object Detection
+            objectDetector.process(image)
+                .addOnSuccessListener { objects ->
+                    for (obj in objects) {
+                        val centerX = obj.boundingBox.centerX()
+                        if (centerX > imageWidth / 3 && centerX < 2 * imageWidth / 3) {
+                            val label = obj.labels.firstOrNull()?.text ?: "Object"
+                            if (label.equals("Person", ignoreCase = true)) {
+                                handlePersonDetected()
+                            } else {
+                                handleObstacleDetected(label)
+                            }
+                        }
                     }
                 }
-            }.addOnCompleteListener { imageProxy.close() }
+                .addOnCompleteListener { imageProxy.close() }
         } else {
             imageProxy.close()
         }
@@ -242,8 +250,14 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
         
-        // Suggest detour: "Move left"
         handleDetection("OBSTACLE", "$label in path. Move left to avoid it.", "STOP")
+    }
+
+    private fun handlePersonDetected() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
+        
+        handleDetection("PERSON", "Person ahead. Please be careful.", "STOP")
     }
 
     private fun handleDetection(badge: String, instruction: String, command: String) {
