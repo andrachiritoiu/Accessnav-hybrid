@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    tools:context=".NavigationActivity">
+
+    <!-- Live Camera Feed -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Top Overlay Controls -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/muteButton"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@drawable/ic_volume_up"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:contentDescription="Mute Voice" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_status_pill"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:gravity="center"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+            
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_watch"
+                app:tint="#00E676" />
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Watch Active"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Bottom Sheet (Instruction Panel) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/bottomSheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:cardCornerRadius="32dp"
+        app:cardBackgroundColor="#CC1A1A1A"
+        app:cardElevation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <View
+                android:layout_width="32dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center"
+                android:background="#40FFFFFF"
+                android:layout_marginBottom="24dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/detectionBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Scanning..."
+                app:chipBackgroundColor="#33FFFFFF"
+                android:textColor="#FFFFFF"
+                app:chipStrokeWidth="0dp"
+                style="@style/Widget.Material3.Chip.Assist" />
+
+            <TextView
+                android:id="@+id/geminiInstruction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Keep moving forward. Path is clear."
+                android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/hapticIcon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_haptic_forward"
+                    app:tint="#00E676" />
+
+                <TextView
+                    android:id="@+id/hapticDescription"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="Haptic: Forward Pulse"
+                    android:textColor="#BDBDBD"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/stopNavButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="64dp"
+                    android:text="Stop"
+                    app:cornerRadius="32dp"
+                    app:backgroundTint="#CF6679"
+                    android:textColor="#000000" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
