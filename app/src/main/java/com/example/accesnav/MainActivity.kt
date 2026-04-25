@@ -18,10 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.accesnav.databinding.ActivityMainBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
@@ -60,32 +57,51 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Initialize Maps SDK with latest renderer
+        MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST) { 
+            Log.d("Maps", "Renderer initialized")
+        }
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) tts?.language = Locale.US
         }
         
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
+        // Find map fragment and load map
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
+        mapFragment?.getMapAsync(this) ?: run {
+            Log.e("Maps", "Map Fragment not found!")
+            Toast.makeText(this, "Map Error: Fragment missing", Toast.LENGTH_LONG).show()
+        }
 
         setupUI()
+        checkApiKey()
+    }
+
+    private fun checkApiKey() {
+        try {
+            val info = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+            val apiKey = info.metaData.getString("com.google.android.geo.API_KEY")
+            if (apiKey == "YOUR_API_KEY_HERE" || apiKey.isNullOrBlank()) {
+                binding.apiKeyWarning.visibility = View.VISIBLE
+                Toast.makeText(this, "HARTA ESTE BLOCATĂ: Adaugă API KEY în Manifest!", Toast.LENGTH_LONG).show()
+            } else {
+                binding.apiKeyWarning.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            binding.apiKeyWarning.visibility = View.VISIBLE
+        }
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        enableMyLocation()
+        Log.d("Maps", "Map is ready!")
         
+        // High-contrast accessibility settings
+        googleMap?.uiSettings?.isZoomControlsEnabled = true
         googleMap?.uiSettings?.isMyLocationButtonEnabled = true
-        googleMap?.uiSettings?.isCompassEnabled = true
         
-        // Check for API Key
-        try {
-            val info = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
-            val apiKey = info.metaData.getString("com.google.android.geo.API_KEY")
-            if (apiKey == "YOUR_API_KEY_HERE") {
-                Toast.makeText(this, "IMPORTANT: Please set your Google Maps API Key in AndroidManifest.xml", Toast.LENGTH_LONG).show()
-            }
-        } catch (e: Exception) { }
+        enableMyLocation()
     }
 
     private fun enableMyLocation() {
@@ -115,7 +131,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         binding.settingsButton.setOnClickListener {
-            Toast.makeText(this, "Settings Ready", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Maps Accessibility Configured", Toast.LENGTH_SHORT).show()
         }
 
         val ip = getLocalIpAddress()
@@ -130,7 +146,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         try {
             voiceLauncher.launch(intent)
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Voice Search Error", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun handleDestinationSelected(destinationName: String) {
@@ -151,40 +169,35 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         googleMap?.clear()
                         googleMap?.addMarker(MarkerOptions().position(destLatLng).title(destinationName))
                         
-                        // Calculate route and time
-                        if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                                location?.let {
-                                    val currentLatLng = LatLng(it.latitude, it.longitude)
-                                    drawAccessibleRoute(currentLatLng, destLatLng)
-                                    
-                                    // Distance/Time Calculation
-                                    val results = FloatArray(1)
-                                    android.location.Location.distanceBetween(
-                                        it.latitude, it.longitude,
-                                        address.latitude, address.longitude,
-                                        results
-                                    )
-                                    val distance = results[0]
-                                    val minutes = (distance / 75).toInt() + 1 // ~75m/min walking
-                                    
-                                    val msg = "Traseu configurat către $destinationName. Timp estimat: $minutes minute."
-                                    binding.lastActivityText.text = "Est. time: $minutes min"
-                                    tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
-                                    
-                                    // Zoom to fit both
-                                    val bounds = LatLngBounds.Builder()
-                                        .include(currentLatLng)
-                                        .include(destLatLng)
-                                        .build()
-                                    googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200))
-                                } ?: run {
-                                    googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(destLatLng, 15f))
-                                }
+                        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                            location?.let {
+                                val currentLatLng = LatLng(it.latitude, it.longitude)
+                                drawAccessibleRoute(currentLatLng, destLatLng)
+                                
+                                val results = FloatArray(1)
+                                android.location.Location.distanceBetween(
+                                    it.latitude, it.longitude,
+                                    address.latitude, address.longitude,
+                                    results
+                                )
+                                val distance = results[0]
+                                val minutes = (distance / 75).toInt() + 1
+                                
+                                val msg = "Traseu configurat. Timp estimat: $minutes minute."
+                                binding.lastActivityText.text = "Est. time: $minutes min"
+                                tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
+                                
+                                val bounds = LatLngBounds.Builder()
+                                    .include(currentLatLng)
+                                    .include(destLatLng)
+                                    .build()
+                                googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 250))
+                            } ?: run {
+                                googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(destLatLng, 15f))
                             }
                         }
                     } else {
-                        Toast.makeText(this@MainActivity, "Could not find destination", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Location not found", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
