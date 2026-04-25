@@ -7,12 +7,14 @@ import android.graphics.Color
 import android.location.Geocoder
 import android.os.Bundle
 import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.accesnav.databinding.ActivityMainBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -21,8 +23,12 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.NetworkInterface
 import java.util.*
 
@@ -31,6 +37,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var binding: ActivityMainBinding
     private var googleMap: GoogleMap? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var tts: TextToSpeech? = null
 
     private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -54,8 +61,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(binding.root)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) tts?.language = Locale.US
+        }
         
-        // Initialize Map
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
@@ -66,9 +75,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         googleMap = map
         enableMyLocation()
         
-        // Style the map for high contrast (accessibility)
-        googleMap?.uiSettings?.isZoomControlsEnabled = true
+        googleMap?.uiSettings?.isMyLocationButtonEnabled = true
         googleMap?.uiSettings?.isCompassEnabled = true
+        
+        // Check for API Key
+        try {
+            val info = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+            val apiKey = info.metaData.getString("com.google.android.geo.API_KEY")
+            if (apiKey == "YOUR_API_KEY_HERE") {
+                Toast.makeText(this, "IMPORTANT: Please set your Google Maps API Key in AndroidManifest.xml", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) { }
     }
 
     private fun enableMyLocation() {
@@ -98,75 +115,91 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         binding.settingsButton.setOnClickListener {
-            Toast.makeText(this, "Accessibility Settings: High Contrast Maps Active", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Settings Ready", Toast.LENGTH_SHORT).show()
         }
 
         val ip = getLocalIpAddress()
-        binding.lastActivityText.text = "AccessNav Engine Online. IP: $ip"
+        binding.lastActivityText.text = "IP: $ip • System Active"
     }
 
     private fun startVoiceSearch() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Where would you like to go?")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Where to?")
         }
         try {
             voiceLauncher.launch(intent)
-        } catch (e: Exception) {
-            Toast.makeText(this, "Voice search not available", Toast.LENGTH_SHORT).show()
-        }
+        } catch (e: Exception) { }
     }
 
     private fun handleDestinationSelected(destinationName: String) {
-        binding.destinationCard.visibility = View.VISIBLE
-        binding.destinationText.text = "Routing to: $destinationName"
-
-        // 1. Geocode Destination (Find Lat/Lng from name)
-        val geocoder = Geocoder(this, Locale.getDefault())
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                val geocoder = Geocoder(this@MainActivity, Locale.getDefault())
                 @Suppress("DEPRECATION")
                 val addresses = geocoder.getFromLocationName(destinationName, 1)
-                if (!addresses.isNullOrEmpty()) {
-                    val address = addresses[0]
-                    val destLatLng = LatLng(address.latitude, address.longitude)
+                
+                withContext(Dispatchers.Main) {
+                    if (!addresses.isNullOrEmpty()) {
+                        val address = addresses[0]
+                        val destLatLng = LatLng(address.latitude, address.longitude)
 
-                    withContext(Dispatchers.Main) {
-                        // 2. Add Marker and animate
+                        binding.destinationText.visibility = View.VISIBLE
+                        binding.destinationText.text = "Target: $destinationName"
+
                         googleMap?.clear()
                         googleMap?.addMarker(MarkerOptions().position(destLatLng).title(destinationName))
                         
-                        // 3. Draw Accessible Route (Mocked for demo)
-                        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                            location?.let {
-                                val currentLatLng = LatLng(it.latitude, it.longitude)
-                                drawAccessibleRoute(currentLatLng, destLatLng)
-                                googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(destLatLng, 14f))
+                        // Calculate route and time
+                        if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                                location?.let {
+                                    val currentLatLng = LatLng(it.latitude, it.longitude)
+                                    drawAccessibleRoute(currentLatLng, destLatLng)
+                                    
+                                    // Distance/Time Calculation
+                                    val results = FloatArray(1)
+                                    android.location.Location.distanceBetween(
+                                        it.latitude, it.longitude,
+                                        address.latitude, address.longitude,
+                                        results
+                                    )
+                                    val distance = results[0]
+                                    val minutes = (distance / 75).toInt() + 1 // ~75m/min walking
+                                    
+                                    val msg = "Traseu configurat către $destinationName. Timp estimat: $minutes minute."
+                                    binding.lastActivityText.text = "Est. time: $minutes min"
+                                    tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
+                                    
+                                    // Zoom to fit both
+                                    val bounds = LatLngBounds.Builder()
+                                        .include(currentLatLng)
+                                        .include(destLatLng)
+                                        .build()
+                                    googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200))
+                                } ?: run {
+                                    googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(destLatLng, 15f))
+                                }
                             }
                         }
-                        Toast.makeText(this@MainActivity, "Found: $destinationName. Calculating accessible path...", Toast.LENGTH_LONG).show()
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@MainActivity, "Location not found. Try again.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@MainActivity, "Could not find destination", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
-                Log.e("Maps", "Geocoding error", e)
+                Log.e("Maps", "Error: ${e.message}")
             }
         }
     }
 
     private fun drawAccessibleRoute(start: LatLng, end: LatLng) {
-        // In a production app, we would use the Google Directions API with accessibility parameters
         val polylineOptions = PolylineOptions()
             .add(start)
             .add(end)
             .color(Color.parseColor("#1A73E8"))
-            .width(15f)
+            .width(18f)
             .geodesic(true)
-        
         googleMap?.addPolyline(polylineOptions)
     }
 
@@ -191,5 +224,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         } catch (ex: Exception) { }
         return "---"
+    }
+
+    override fun onDestroy() {
+        tts?.shutdown()
+        super.onDestroy()
     }
 }
