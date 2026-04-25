@@ -38,12 +38,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var googleMap: GoogleMap? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var tts: TextToSpeech? = null
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var retryRunnable: Runnable? = null
 
     private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val data = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
             val destination = data?.get(0) ?: ""
             handleDestinationSelected(destination)
+        }
+    }
+
+    private val confirmationLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val response = data?.get(0)?.lowercase() ?: ""
+            handleConfirmationResponse(response)
         }
     }
 
@@ -230,9 +240,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             .color(Color.parseColor("#1A73E8"))
                             .width(18f))
                         
-                        val msg = "Traseu găsit spre $destName. Distanță: $distance. Timp estimat: $duration."
+                        val msg = "Traseu găsit spre $destName. Distanță: $distance. Timp estimat: $duration. Porrim călătoria?"
                         binding.lastActivityText.text = "Timp: $duration ($distance)"
-                        tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
+                        
+                        announceAndAsk(msg)
                         
                         val bounds = LatLngBounds.Builder()
                             .include(origin)
@@ -250,6 +261,61 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 Log.e("Maps", "Directions error: ${e.message}")
             }
         }
+    }
+
+    private fun announceAndAsk(message: String) {
+        val params = Bundle()
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "CONFIRMATION_ASK")
+        tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            override fun onDone(utteranceId: String?) {
+                if (utteranceId == "CONFIRMATION_ASK") {
+                    runOnUiThread { listenForConfirmation() }
+                }
+            }
+            override fun onError(utteranceId: String?) {}
+        })
+        tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "CONFIRMATION_ASK")
+    }
+
+    private fun listenForConfirmation() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Spune DA pentru a porni sau NU pentru a aștepta")
+        }
+        try {
+            confirmationLauncher.launch(intent)
+        } catch (e: Exception) { }
+    }
+
+    private fun handleConfirmationResponse(response: String) {
+        when {
+            response.contains("da") || response.contains("yes") || response.contains("start") -> {
+                cancelRetryTimer()
+                startNavigation()
+            }
+            response.contains("nu") || response.contains("no") -> {
+                Toast.makeText(this, "Navigare amânată. Voi întreba din nou în 5 minute.", Toast.LENGTH_SHORT).show()
+                startRetryTimer()
+            }
+            else -> {
+                tts?.speak("Nu am înțeles. Te rog spune DA sau NU.", TextToSpeech.QUEUE_FLUSH, null, null)
+            }
+        }
+    }
+
+    private fun startRetryTimer() {
+        cancelRetryTimer()
+        retryRunnable = Runnable {
+            announceAndAsk("Au trecut 5 minute. Porrim călătoria acum?")
+            startRetryTimer() // Reschedule
+        }
+        retryRunnable?.let { handler.postDelayed(it, 5 * 60 * 1000) }
+    }
+
+    private fun cancelRetryTimer() {
+        retryRunnable?.let { handler.removeCallbacks(it) }
     }
 
     private fun decodePolyline(encoded: String): List<LatLng> {
@@ -311,6 +377,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onDestroy() {
+        cancelRetryTimer()
         tts?.shutdown()
         super.onDestroy()
     }
