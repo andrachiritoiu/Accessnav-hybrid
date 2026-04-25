@@ -49,13 +49,45 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var timeoutRunnable: Runnable? = null
     private var udpStarted = false
+    
+    // Voice Flow States
+    private enum class VoiceState { IDLE, ASKING_LOCATION, ASKING_DESTINATION }
+    private var currentVoiceState = VoiceState.IDLE
 
     private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val data = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val destination = data?.get(0) ?: ""
-            handleDestinationSelected(destination)
+            val response = data?.get(0)?.lowercase() ?: ""
+            handleVoiceResponse(response)
         }
+    }
+
+    private fun handleVoiceResponse(response: String) {
+        when (currentVoiceState) {
+            VoiceState.ASKING_LOCATION -> {
+                if (response.contains("indoor")) {
+                    currentVoiceState = VoiceState.IDLE
+                    tts?.speak("Starting Indoor Mode.", TextToSpeech.QUEUE_FLUSH, null, null)
+                    startIndoorNavigation()
+                } else if (response.contains("outdoor")) {
+                    currentVoiceState = VoiceState.ASKING_DESTINATION
+                    tts?.speak("Outdoor Mode active. Where would you like to go?", TextToSpeech.QUEUE_FLUSH, null, "READY")
+                } else {
+                    tts?.speak("I didn't catch that. Please say indoors or outdoors.", TextToSpeech.QUEUE_FLUSH, null, "READY")
+                }
+            }
+            VoiceState.ASKING_DESTINATION -> {
+                currentVoiceState = VoiceState.IDLE
+                handleDestinationSelected(response)
+            }
+            else -> {}
+        }
+    }
+
+    private fun startIndoorNavigation() {
+        val intent = Intent(this, NavigationActivity::class.java)
+        intent.putExtra("START_OUTDOOR", false)
+        startActivity(intent)
     }
 
     private val locationPermissionLauncher = registerForActivityResult(
@@ -81,7 +113,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     setPitch(1.0f)
                     setSpeechRate(0.9f)
                     setupTTSListener()
-                    speak("Welcome to Access Nav. I am ready. Please say your destination.", TextToSpeech.QUEUE_FLUSH, null, "READY")
+                    
+                    val welcomeMsg = "Welcome to Access Nav. Are you indoors or outdoors?"
+                    currentVoiceState = VoiceState.ASKING_LOCATION
+                    speak(welcomeMsg, TextToSpeech.QUEUE_FLUSH, null, "READY")
                 }
             }
         }
@@ -152,10 +187,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun startVoiceSearch() {
+        val prompt = when (currentVoiceState) {
+            VoiceState.ASKING_LOCATION -> "Indoors or Outdoors?"
+            VoiceState.ASKING_DESTINATION -> "Where to?"
+            else -> "I'm listening"
+        }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US)
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Where would you like to go?")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
         }
         try { voiceLauncher.launch(intent) } catch (e: Exception) { }
     }
