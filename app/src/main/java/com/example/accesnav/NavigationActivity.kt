@@ -3,6 +3,7 @@ package com.example.accesnav
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.location.Location
 import android.os.*
 import android.speech.tts.TextToSpeech
@@ -54,6 +55,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
     )
     
     private var lastAnnouncementTime = 0L
+    private val THROTTLE_MS = 2000L // Requirement 6: Max one alert every 2 seconds
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +66,6 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         cameraExecutor = Executors.newSingleThreadExecutor()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // Initialize Mini Map
         val mapFragment = supportFragmentManager.findFragmentById(R.id.miniMap) as? SupportMapFragment
         mapFragment?.getMapAsync(this)
 
@@ -76,7 +77,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         val destination = intent.getStringExtra("DESTINATION") ?: "Unknown"
         binding.geminiInstruction.text = "Navigating to: $destination"
         
-        speak("AI Navigation Active. Scanning for signs and obstacles.")
+        speak("Vision navigation started. Looking for obstacles and signs.")
     }
 
     override fun onMapReady(map: GoogleMap) {
@@ -84,27 +85,19 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         googleMap?.uiSettings?.apply {
             isMyLocationButtonEnabled = false
             isZoomControlsEnabled = false
-            isMapToolbarEnabled = false
         }
-        
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             googleMap?.isMyLocationEnabled = true
         }
     }
 
     private fun startLocationUpdates() {
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
-            .setMinUpdateIntervalMillis(1000)
-            .build()
-
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000).build()
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                for (location in locationResult.locations) {
-                    updateMiniMap(location)
-                }
+                locationResult.lastLocation?.let { updateMiniMap(it) }
             }
         }
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
         }
@@ -116,20 +109,14 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
     }
 
     private fun setupControls() {
-        binding.stopNavButton.setOnClickListener {
-            handleStop()
-            finish()
-        }
-        binding.muteButton.setOnClickListener {
-            tts?.stop()
-            Toast.makeText(this, "Voice guidance muted", Toast.LENGTH_SHORT).show()
-        }
+        binding.stopNavButton.setOnClickListener { finish() }
+        binding.muteButton.setOnClickListener { tts?.stop() }
     }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
@@ -144,9 +131,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalyzer)
-            } catch (exc: Exception) {
-                Log.e("Camera", "Binding failed", exc)
-            }
+            } catch (exc: Exception) { }
         }, ContextCompat.getMainExecutor(this))
     }
 
@@ -155,19 +140,24 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            val imageWidth = image.width
             
+            // Run Text Recognition
             textRecognizer.process(image)
                 .addOnSuccessListener { visionText ->
                     if (visionText.text.isNotBlank()) {
-                        handleRecognizedText(visionText.text)
+                        analyzeText(visionText.text)
                     }
                 }
             
+            // Run Object Detection
             objectDetector.process(image)
                 .addOnSuccessListener { objects ->
                     for (obj in objects) {
-                        for (label in obj.labels) {
-                            handleDetectedObject(label.text)
+                        // Requirement 10: Center third detection
+                        val centerX = obj.boundingBox.centerX()
+                        if (centerX > imageWidth / 3 && centerX < 2 * imageWidth / 3) {
+                            handleObstacleDetected(obj.labels.firstOrNull()?.text ?: "Object")
                         }
                     }
                 }
@@ -177,29 +167,35 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         }
     }
 
-    private fun handleRecognizedText(text: String) {
+    private fun analyzeText(text: String) {
         val currentTime = System.currentTimeMillis()
+        if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
+        
         val upperText = text.uppercase()
-        if ((currentTime - lastAnnouncementTime) < 4000) return
-
         when {
-            upperText.contains("EXIT") -> handleDetection("EXIT", "Exit detected. Follow the path.", "FORWARD")
-            upperText.contains("STAIRS") -> handleDetection("STAIRS", "Stairs detected. Proceed with caution.", "STOP")
-            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> handleDetection("LIFT", "Elevator detected ahead.", "FORWARD")
-            upperText.contains("RAMP") -> handleDetection("RAMP", "Accessible ramp found.", "FORWARD")
+            upperText.contains("EXIT") -> handleExitDetected()
+            upperText.contains("STAIRS") || upperText.contains("SCARI") -> handleStairsDetected()
+            upperText.contains("LIFT") || upperText.contains("ELEVATOR") -> handleLiftDetected()
+            upperText.contains("ROOM") -> handleDetection("ROOM", "Room number detected.", "FORWARD")
         }
     }
 
-    private fun handleDetectedObject(label: String) {
-        val currentTime = System.currentTimeMillis()
-        if ((currentTime - lastAnnouncementTime) < 5000) return
+    private fun handleExitDetected() {
+        handleDetection("EXIT", "Exit sign detected ahead.", "FORWARD")
+    }
 
-        when (label.lowercase()) {
-            "chair", "table", "desk" -> handleDetection("OBSTACLE", "Obstacle ahead. Move left.", "LEFT")
-            "door" -> handleDetection("DOOR", "Door detected in front.", "FORWARD")
-            "person" -> handleDetection("PERSON", "Person ahead. Be careful.", "STOP")
-            "stairs" -> handleDetection("STAIRS", "Stairs detected. Path restricted.", "STOP")
-        }
+    private fun handleStairsDetected() {
+        handleDetection("STAIRS", "Caution: Stairs detected.", "STOP")
+    }
+
+    private fun handleLiftDetected() {
+        handleDetection("LIFT", "Elevator or lift detected.", "FORWARD")
+    }
+
+    private fun handleObstacleDetected(label: String) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastAnnouncementTime < THROTTLE_MS) return
+        handleDetection("OBSTACLE", "$label detected in your path.", "STOP")
     }
 
     private fun handleDetection(badge: String, instruction: String, command: String) {
@@ -208,20 +204,9 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
             binding.detectionBadge.text = badge
             binding.geminiInstruction.text = instruction
             speak(instruction)
-            updateHapticUI(command)
             sendWatchCommand(command)
             vibrateCommand(command)
         }
-    }
-
-    private fun updateHapticUI(command: String) {
-        binding.hapticDescription.text = "Haptic: $command Pulse"
-    }
-
-    private fun handleStop() {
-        speak("Navigation stopped.")
-        sendWatchCommand("STOP")
-        vibrateCommand("STOP")
     }
 
     private fun speak(text: String) {
@@ -252,46 +237,38 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
         vibrator?.let {
             when (type) {
                 "FORWARD" -> it.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
-                "LEFT" -> it.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 150, 100, 150), -1))
-                "RIGHT" -> it.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 150, 100, 150, 100, 150), -1))
                 "STOP" -> it.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
+                else -> it.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
             }
         }
     }
 
     private fun startUdpListener() {
         lifecycleScope.launch(Dispatchers.IO) {
-            while (true) {
-                try {
-                    val socket = DatagramSocket(5050)
-                    udpSocket = socket
-                    val buffer = ByteArray(1024)
+            try {
+                val socket = DatagramSocket(5050)
+                udpSocket = socket
+                val buffer = ByteArray(1024)
+                while (true) {
                     val packet = DatagramPacket(buffer, buffer.size)
-                    while (true) {
-                        socket.receive(packet)
-                        val message = String(packet.data, 0, packet.length).trim().uppercase()
-                        withContext(Dispatchers.Main) {
-                            when (message) {
-                                "RAMP_RIGHT" -> handleDetection("BEACON", "Ramp detected on the right.", "RIGHT")
-                                "DANGER" -> handleDetection("BEACON", "Danger ahead. Stop.", "STOP")
-                            }
+                    socket.receive(packet)
+                    val message = String(packet.data, 0, packet.length).trim().uppercase()
+                    withContext(Dispatchers.Main) {
+                        when (message) {
+                            "RAMP_RIGHT" -> handleDetection("BEACON", "Ramp detected on the right.", "RIGHT")
+                            "DANGER" -> handleDetection("BEACON", "Danger ahead. Stop.", "STOP")
                         }
                     }
-                } catch (e: Exception) {
-                    udpSocket?.close()
-                    delay(5000)
                 }
-            }
+            } catch (e: Exception) { }
         }
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            tts?.apply {
-                language = Locale.US
-                setPitch(1.0f)
-                setSpeechRate(0.9f)
-            }
+            tts?.language = Locale.US
+            tts?.setPitch(1.0f)
+            tts?.setSpeechRate(0.9f)
         }
     }
 
