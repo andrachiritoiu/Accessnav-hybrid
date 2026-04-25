@@ -171,11 +171,24 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
                     for (obj in objects) {
                         val centerX = obj.boundingBox.centerX()
                         if (centerX > imageWidth / 3 && centerX < 2 * imageWidth / 3) {
-                            val label = obj.labels.firstOrNull()?.text ?: "Object"
-                            if (label.equals("Person", ignoreCase = true)) {
+                            var isPerson = false
+                            var topLabel = "Object"
+                            
+                            for (label in obj.labels) {
+                                Log.d("AI_DEBUG", "Detected label: ${label.text}")
+                                if (label.text.lowercase().contains("person") || 
+                                    label.text.lowercase().contains("human") ||
+                                    label.text.lowercase().contains("man") ||
+                                    label.text.lowercase().contains("woman")) {
+                                    isPerson = true
+                                }
+                                if (topLabel == "Object") topLabel = label.text
+                            }
+
+                            if (isPerson) {
                                 handlePersonDetected()
                             } else {
-                                handleObstacleDetected(label)
+                                handleObstacleDetected(topLabel)
                             }
                         }
                     }
