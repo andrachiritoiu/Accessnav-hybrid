@@ -7,23 +7,85 @@
     android:background="#000000"
     tools:context=".NavigationActivity">
 
-    <!-- Live Camera Feed -->
+    <!-- Live Camera Feed (Full Screen) -->
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Mini Map Overlay (Top Right) -->
+    <!-- Dark Gradient Overlay (Top) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="@drawable/bg_top_gradient" />
+
+    <!-- Dark Gradient Overlay (Bottom) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_bottom_gradient" />
+
+    <!-- Top Overlay Controls -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/muteButton"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            app:icon="@drawable/ic_volume_up"
+            app:iconSize="28dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:backgroundTint="#80000000"
+            app:iconTint="#FFFFFF"
+            android:contentDescription="Mute Voice" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_status_pill"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:gravity="center"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+            
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/shape_pulse_dot" />
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="AI SCANNING"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Mini Map Overlay (Middle Right - Styled) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/miniMapCard"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:layout_margin="16dp"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        android:layout_margin="20dp"
+        android:layout_marginTop="100dp"
         android:layout_gravity="top|end"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="8dp"
-        app:strokeColor="#FFFFFF"
-        app:strokeWidth="2dp">
+        app:cardCornerRadius="24dp"
+        app:cardElevation="12dp"
+        app:strokeColor="#40FFFFFF"
+        app:strokeWidth="1dp"
+        app:cardBackgroundColor="#80000000">
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/miniMap"
@@ -32,99 +94,121 @@
             android:layout_height="match_parent" />
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Top Overlay Controls -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/muteButton"
-            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            app:icon="@drawable/ic_volume_up"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:contentDescription="Mute Voice" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <!-- Bottom Sheet (Instruction Panel) -->
+    <!-- Navigation Instruction Card (Bottom Sheet style) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomSheet"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        app:cardCornerRadius="32dp"
-        app:cardBackgroundColor="#CC1A1A1A"
-        app:cardElevation="0dp">
+        android:layout_margin="16dp"
+        app:cardCornerRadius="36dp"
+        app:cardBackgroundColor="#CC121212"
+        app:cardElevation="0dp"
+        app:strokeColor="#33FFFFFF"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="28dp">
 
             <View
-                android:layout_width="32dp"
+                android:layout_width="40dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
-                android:background="#40FFFFFF"
+                android:background="#60FFFFFF"
                 android:layout_marginBottom="24dp" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/detectionBadge"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Scanning..."
-                app:chipBackgroundColor="#33FFFFFF"
-                android:textColor="#FFFFFF"
-                app:chipStrokeWidth="0dp"
-                style="@style/Widget.Material3.Chip.Assist" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/detectionBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Searching..."
+                    app:chipBackgroundColor="#1A73E8"
+                    android:textColor="#FFFFFF"
+                    app:chipStrokeWidth="0dp"
+                    app:chipCornerRadius="12dp"
+                    style="@style/Widget.Material3.Chip.Assist" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="• LIVE ASSISTANCE"
+                    android:textColor="#80FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/geminiInstruction"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Keep moving forward. Path is clear."
+                android:text="Initializing AI vision..."
                 android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
                 android:textColor="#FFFFFF"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:lineSpacingExtra="4dp" />
 
-            <LinearLayout
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="1dp"
+                android:background="#20FFFFFF"
                 android:layout_marginTop="24dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_marginBottom="24dp" />
 
-                <ImageView
-                    android:id="@+id/hapticIcon"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:src="@drawable/ic_haptic_forward"
-                    app:tint="#00E676" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-                <TextView
-                    android:id="@+id/hapticDescription"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
+                <LinearLayout
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:text="Haptic: Forward Pulse"
-                    android:textColor="#BDBDBD"
-                    android:textSize="14sp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true">
+
+                    <ImageView
+                        android:id="@+id/hapticIcon"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:src="@drawable/ic_haptic_forward"
+                        app:tint="#00E676"
+                        android:background="@drawable/shape_circle_outline"
+                        android:padding="12dp" />
+
+                    <TextView
+                        android:id="@+id/hapticDescription"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="Path is clear"
+                        android:textColor="#BDBDBD"
+                        android:textSize="16sp"
+                        android:textStyle="medium" />
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/stopNavButton"
                     android:layout_width="wrap_content"
                     android:layout_height="64dp"
+                    android:layout_alignParentEnd="true"
                     android:text="Stop"
+                    android:paddingHorizontal="32dp"
                     app:cornerRadius="32dp"
                     app:backgroundTint="#CF6679"
-                    android:textColor="#000000" />
-            </LinearLayout>
+                    android:textColor="#000000"
+                    android:textStyle="bold" />
+            </RelativeLayout>
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
