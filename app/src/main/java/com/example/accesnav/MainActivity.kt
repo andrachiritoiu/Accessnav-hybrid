@@ -8,8 +8,6 @@ import android.location.Geocoder
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -35,7 +33,6 @@ import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.HttpURLConnection
-import java.net.NetworkInterface
 import java.net.URL
 import java.util.*
 import kotlin.concurrent.thread
@@ -47,7 +44,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var tts: TextToSpeech? = null
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var timeoutRunnable: Runnable? = null
     private var udpStarted = false
     
     // Voice Flow States
@@ -116,7 +112,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     
                     val welcomeMsg = "Welcome to Access Nav. Are you indoors or outdoors?"
                     currentVoiceState = VoiceState.ASKING_LOCATION
-                    speak(welcomeMsg, TextToSpeech.QUEUE_FLUSH, null, "READY")
+                    speak(welcomeMsg)
                 }
             }
         }
@@ -126,14 +122,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         setupUI()
         checkApiKey()
+        startUdpListener()
     }
 
     private fun checkApiKey() {
         try {
             val info = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
             val apiKey = info.metaData.getString("com.google.android.geo.API_KEY")
-            if (apiKey == "YOUR_API_KEY_HERE" || apiKey.isNullOrBlank()) {
-                binding.apiKeyWarning.visibility = View.VISIBLE
+            if (apiKey == "YOUR_API_KEY_HERE" || (apiKey.isNullOrBlank())) {
+                Toast.makeText(this, "⚠️ API KEY MISSING", Toast.LENGTH_LONG).show()
                 mainHandler.postDelayed({
                     tts?.speak("Warning: Google Maps API key is missing. Navigation will not work correctly.", TextToSpeech.QUEUE_ADD, null, null)
                 }, 2000)
@@ -169,21 +166,45 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     runOnUiThread { startVoiceSearch() }
                 }
             }
+            @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {}
         })
     }
 
     private fun setupUI() {
-        binding.startNavButton.setOnClickListener { startNavigation() }
-        binding.settingsButton.setOnClickListener { Toast.makeText(this, "Settings ready", Toast.LENGTH_SHORT).show() }
-        
-        binding.confirmationButton.setOnClickListener {
-            cancelTimeout()
-            startNavigation()
+        binding.emergencyStop.setOnClickListener { 
+            tts?.stop()
+            speak("Emergency stop activated. All guidance paused.")
+            saveHistory("SYSTEM", "Emergency stop triggered")
         }
+        
+        setupBottomNavigation()
+    }
 
-        val ip = getLocalIpAddress()
-        binding.lastActivityText.text = "IP: $ip • System Active"
+    private fun saveHistory(type: String, content: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val db = com.example.accesnav.db.AppDatabase.getDatabase(this@MainActivity)
+                db.historyDao().insert(com.example.accesnav.db.HistoryItem(type = type, content = content))
+            } catch (e: Exception) { }
+        }
+    }
+
+    private fun setupBottomNavigation() {
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> true
+                R.id.nav_camera -> {
+                    startActivity(Intent(this, NavigationActivity::class.java))
+                    true
+                }
+                R.id.nav_history -> {
+                    startActivity(Intent(this, HistoryActivity::class.java))
+                    true
+                }
+                else -> true
+            }
+        }
     }
 
     private fun startVoiceSearch() {
@@ -194,7 +215,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-US")
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "en-US")
             putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
         }
         try { voiceLauncher.launch(intent) } catch (e: Exception) { }
@@ -211,8 +234,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     if (!addresses.isNullOrEmpty()) {
                         val address = addresses[0]
                         val destLatLng = LatLng(address.latitude, address.longitude)
-                        binding.destinationText.visibility = View.VISIBLE
-                        binding.destinationText.text = "Target: $destinationName"
+                        binding.guidanceText.text = "Target: $destinationName"
                         googleMap?.clear()
                         googleMap?.addMarker(MarkerOptions().position(destLatLng).title(destinationName))
                         
@@ -249,47 +271,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     
                     withContext(Dispatchers.Main) {
                         googleMap?.addPolyline(PolylineOptions().addAll(path).color(Color.parseColor("#1A73E8")).width(18f))
-                        val msg = "I have found a route. The distance is $distance, and the travel time is $duration. Please double tap the screen if you would like to start the navigation now."
+                        val msg = "Route found. Distance is $distance, time is $duration. Starting navigation."
                         binding.lastActivityText.text = "$duration ($distance)"
-                        
-                        showConfirmationUI(msg, stepsJson)
+                        speak(msg)
                         
                         val bounds = LatLngBounds.Builder().include(origin).include(dest).build()
                         googleMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 250))
+
+                        // Transition to NavigationActivity for outdoor mode
+                        mainHandler.postDelayed({
+                            val intent = Intent(this@MainActivity, NavigationActivity::class.java)
+                            intent.putExtra("DESTINATION", "Target Location")
+                            intent.putExtra("STEPS_JSON", stepsJson)
+                            intent.putExtra("START_OUTDOOR", true)
+                            startActivity(intent)
+                        }, 3000)
                     }
                 }
             } catch (e: Exception) { }
         }
-    }
-
-    private fun showConfirmationUI(message: String, stepsJson: String = "") {
-        tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "CONFIRM")
-        binding.confirmationButton.visibility = View.VISIBLE
-        binding.bottomControls.visibility = View.GONE
-        binding.topOverlay.visibility = View.GONE
-        
-        binding.confirmationButton.setTag(R.id.confirmationButton, stepsJson)
-        startTimeout()
-    }
-
-    private fun startTimeout() {
-        cancelTimeout()
-        timeoutRunnable = Runnable { resetUI() }
-        mainHandler.postDelayed(timeoutRunnable!!, 60000)
-    }
-
-    private fun cancelTimeout() {
-        timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
-    }
-
-    private fun resetUI() {
-        binding.confirmationButton.visibility = View.GONE
-        binding.bottomControls.visibility = View.VISIBLE
-        binding.topOverlay.visibility = View.VISIBLE
-        binding.destinationText.visibility = View.GONE
-        googleMap?.clear()
-        binding.lastActivityText.text = "System Ready"
-        tts?.speak("Request timed out. Returning to the main screen.", TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun startUdpListener() {
@@ -299,8 +299,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         thread(start = true) {
             try {
                 val socket = DatagramSocket(5050)
-                val buffer = ByteArray(1024)
                 while (true) {
+                    val buffer = ByteArray(1024)
                     val packet = DatagramPacket(buffer, buffer.size)
                     socket.receive(packet)
                     val message = String(packet.data, 0, packet.length).trim()
@@ -313,30 +313,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun handleBeaconMessage(message: String) {
-        val (status, speech, command) = when (message) {
-            "RAMP_RIGHT" -> Triple("Accessible ramp detected on the right.", "Accessible ramp detected on the right.", "RIGHT")
-            "STAIRS_AHEAD", "STAIRS" -> Triple("Stairs ahead. Path may not be accessible.", "Stairs ahead. This path may not be accessible.", "STOP")
-            "LOW_LIGHT" -> Triple("Low visibility area. Proceed with caution.", "Low visibility area detected. Proceed with caution.", "FORWARD")
-            "ACCESSIBLE_EXIT_RIGHT" -> Triple("Accessible exit on your right.", "Accessible exit on your right.", "RIGHT")
-            "STOP" -> Triple("Stop. Unsafe path ahead.", "Stop. Unsafe path ahead.", "STOP")
-            else -> Triple("Beacon: $message", "Building update received.", "FORWARD")
+        val (status, speech) = when (message) {
+            "RAMP_RIGHT" -> "Accessible ramp detected on the right." to "Accessible ramp detected on the right."
+            "STAIRS_AHEAD", "STAIRS" -> "Stairs ahead. Path may not be accessible." to "Stairs ahead. This path may not be accessible."
+            "LOW_LIGHT" -> "Low visibility area. Proceed with caution." to "Low visibility area detected. Proceed with caution."
+            "ACCESSIBLE_EXIT_RIGHT" -> "Accessible exit on your right." to "Accessible exit on your right."
+            "STOP" -> "Stop. Unsafe path ahead." to "Stop. Unsafe path ahead."
+            else -> "Beacon: $message" to "Building update received."
         }
 
         binding.lastActivityText.text = status
         tts?.speak(speech, TextToSpeech.QUEUE_FLUSH, null, null)
-        vibrateCommand(command)
-    }
-
-    private fun vibrateCommand(command: String) {
-        val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
-        val pattern = when (command) {
-            "LEFT" -> longArrayOf(0, 300) // 1 pulse for Left
-            "RIGHT" -> longArrayOf(0, 300, 150, 300) // 2 pulses for Right
-            "STOP" -> longArrayOf(0, 700) // Long pulse for stop
-            else -> longArrayOf(0, 150) // Short pulse for forward
-        }
-        
-        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        saveHistory("BEACON", status)
     }
 
     private fun decodePolyline(encoded: String): List<LatLng> {
@@ -354,7 +342,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 result = result or (b and 0x1f shl shift)
                 shift += 5
             } while (b >= 0x20)
-            lat += if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lat += if ((result and 1) != 0) (result shr 1).inv() else result shr 1
             shift = 0
             result = 0
             do {
@@ -362,44 +350,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 result = result or (b and 0x1f shl shift)
                 shift += 5
             } while (b >= 0x20)
-            lng += if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lng += if ((result and 1) != 0) (result shr 1).inv() else result shr 1
             poly.add(LatLng(lat.toDouble() / 1e5, lng.toDouble() / 1e5))
         }
         return poly
     }
 
-    private fun startNavigation() {
-        val stepsJson = binding.confirmationButton.getTag(R.id.confirmationButton) as? String ?: ""
-        val intent = Intent(this, NavigationActivity::class.java)
-        intent.putExtra("DESTINATION", binding.destinationText.text.toString())
-        intent.putExtra("STEPS_JSON", stepsJson)
-        intent.putExtra("START_OUTDOOR", binding.modeSwitch.isChecked)
-        startActivity(intent)
-        resetUI()
-        
-        startUdpListener()
-        tts?.speak("AccessNav started. Monitoring smart building beacons.", TextToSpeech.QUEUE_FLUSH, null, null)
-    }
-
-    private fun getLocalIpAddress(): String {
-        try {
-            val en = NetworkInterface.getNetworkInterfaces()
-            while (en.hasMoreElements()) {
-                val intf = en.nextElement()
-                val enumIpAddr = intf.inetAddresses
-                while (enumIpAddr.hasMoreElements()) {
-                    val inetAddress = enumIpAddr.nextElement()
-                    if (!inetAddress.isLoopbackAddress && inetAddress is java.net.Inet4Address) {
-                        return inetAddress.hostAddress ?: "---"
-                    }
-                }
-            }
-        } catch (ex: Exception) { }
-        return "---"
+    private fun speak(text: String) {
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "READY")
     }
 
     override fun onDestroy() {
-        cancelTimeout()
         tts?.shutdown()
         super.onDestroy()
     }

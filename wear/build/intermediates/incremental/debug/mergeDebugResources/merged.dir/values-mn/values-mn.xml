@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2" xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="time_difference_short_days" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%dө</item>
+<item quantity="other">%dө</item>
+</plurals>
+    <plurals name="time_difference_short_hours" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%dц</item>
+<item quantity="other">%dц</item>
+</plurals>
+    <plurals name="time_difference_short_minutes" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%dм</item>
+<item quantity="other">%dм</item>
+</plurals>
+    <plurals name="time_difference_words_days" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d өдөр</item>
+<item quantity="other">%d өдөр</item>
+</plurals>
+    <plurals name="time_difference_words_hours" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d цаг</item>
+<item quantity="other">%d цаг</item>
+</plurals>
+    <plurals name="time_difference_words_minutes" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d мин</item>
+<item quantity="other">%d мин</item>
+</plurals>
+    <string name="a11y_no_data">Өгөгдөл байхгүй байна</string>
+    <string name="a11y_no_permission">Өгөгдөлд хандах зөвшөөрөл байхгүй</string>
+    <string name="a11y_template_range">%2$f-н %1$f</string>
+    <string msgid="7903180715631665059" name="abc_action_bar_home_description">"Нүүр хуудас уруу шилжих"</string>
+    <string msgid="6794660482873516081" name="abc_action_bar_up_description">"Дээш шилжих"</string>
+    <string msgid="1155814932213556626" name="abc_action_menu_overflow_description">"Бусад сонголт"</string>
+    <string msgid="2571498368472823490" name="abc_action_mode_done">"Болсон"</string>
+    <string msgid="3732416590524162402" name="abc_activity_chooser_view_see_all">"Бүгдийг харах"</string>
+    <string msgid="1798588241954930982" name="abc_activitychooserview_choose_application">"Аппыг сонгох"</string>
+    <string msgid="3403923230105792483" name="abc_capital_off">"ИДЭВХГҮЙ"</string>
+    <string msgid="7831734969929204599" name="abc_capital_on">"ИДЭВХТЭЙ"</string>
+    <string msgid="5725160506500770567" name="abc_menu_alt_shortcut_label">"Alt+"</string>
+    <string msgid="944415252197684443" name="abc_menu_ctrl_shortcut_label">"Ctrl+"</string>
+    <string msgid="129742188101734366" name="abc_menu_delete_shortcut_label">"устгах"</string>
+    <string msgid="6840127756824236027" name="abc_menu_enter_shortcut_label">"оруулах"</string>
+    <string msgid="4974283687810130415" name="abc_menu_function_shortcut_label">"Функц+"</string>
+    <string msgid="8046416353848716905" name="abc_menu_meta_shortcut_label">"Мета+"</string>
+    <string msgid="3271697756921353410" name="abc_menu_shift_shortcut_label">"Шифт+"</string>
+    <string msgid="2304645930658438191" name="abc_menu_space_shortcut_label">"зай"</string>
+    <string msgid="8327365089695024394" name="abc_menu_sym_shortcut_label">"Sym+"</string>
+    <string msgid="3570106412128999382" name="abc_prepend_shortcut_label">"Цэс+"</string>
+    <string msgid="940844115270746197" name="abc_search_hint">"Хайх…"</string>
+    <string msgid="1769270744562318534" name="abc_searchview_description_clear">"Асуулга арилгах"</string>
+    <string msgid="908784302972860853" name="abc_searchview_description_query">"Хайх асуулга"</string>
+    <string msgid="5466662225065974044" name="abc_searchview_description_search">"Хайх"</string>
+    <string msgid="8203855622131699655" name="abc_searchview_description_submit">"Асуулга илгээх"</string>
+    <string msgid="3478748990613108725" name="abc_searchview_description_voice">"Дуут хайлт"</string>
+    <string msgid="2650565705514630347" name="abc_shareactionprovider_share_with">"Дараахтай хуваалцах"</string>
+    <string msgid="9009661856846212431" name="abc_shareactionprovider_share_with_application">"<ns1:g id="APPLICATION_NAME">%s</ns1:g>-тай хуваалцах"</string>
+    <string msgid="6389460216547290468" name="abc_toolbar_collapse_description">"Буулгах"</string>
+    <string name="buttons_rect_bottom_center">Доор</string>
+    <string name="buttons_rect_bottom_left">Зүүн доор</string>
+    <string name="buttons_rect_bottom_right">Баруун доор</string>
+    <string name="buttons_rect_left_bottom">Зүүн доод талд</string>
+    <string name="buttons_rect_left_center">Голын зүүн талд</string>
+    <string name="buttons_rect_left_top">Зүүн дээд талд</string>
+    <string name="buttons_rect_right_bottom">Баруун доод талд</string>
+    <string name="buttons_rect_right_center">Голын баруун талд</string>
+    <string name="buttons_rect_right_top">Баруун дээд талд</string>
+    <string name="buttons_rect_top_center">Дээр</string>
+    <string name="buttons_rect_top_left">Зүүн дээр</string>
+    <string name="buttons_rect_top_right">Баруун дээр</string>
+    <string name="buttons_round_bottom_center">Доор</string>
+    <string name="buttons_round_bottom_left">Зүүн доор</string>
+    <string name="buttons_round_bottom_left_lower">Зүүн доод талын доор</string>
+    <string name="buttons_round_bottom_left_upper">Зүүн доод талын дээр</string>
+    <string name="buttons_round_bottom_right">Баруун доор</string>
+    <string name="buttons_round_bottom_right_lower">Баруун доод талын доор</string>
+    <string name="buttons_round_bottom_right_upper">Баруун доод талын дээр</string>
+    <string name="buttons_round_center_left">Голын зүүн талд</string>
+    <string name="buttons_round_center_right">Голын баруун талд</string>
+    <string name="buttons_round_top_center">Дээр</string>
+    <string name="buttons_round_top_left">Зүүн дээр</string>
+    <string name="buttons_round_top_left_lower">Зүүн дээд талын доор</string>
+    <string name="buttons_round_top_left_upper">Зүүн дээд талын дээр</string>
+    <string name="buttons_round_top_right">Баруун дээр</string>
+    <string name="buttons_round_top_right_lower">Баруун дээд талын доор</string>
+    <string name="buttons_round_top_right_upper">Баруун дээд талын дээр</string>
+    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">Идэвхжүүлэх</string>
+    <string msgid="227660514972886228" name="common_google_play_services_enable_text">%1$s нь Google Play үйлчилгээг идэвхжүүлэх хүртэл ажиллахгүй.</string>
+    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">Google Play үйлчилгээг идэвхжүүлэх</string>
+    <string msgid="7153882981874058840" name="common_google_play_services_install_button">Суулгах</string>
+    <string name="common_google_play_services_install_text">Таны төхөөрөмжид Google Play үйлчилгээ байхгүй тул %1$s ажиллахгүй.</string>
+    <string msgid="7215213145546190223" name="common_google_play_services_install_title">Google Play үйлчилгээг авах</string>
+    <string name="common_google_play_services_notification_channel_name">Google Play-н үйлчилгээнүүдийн боломжит байдал</string>
+    <string name="common_google_play_services_notification_ticker">Google Наадаан үйлчилгээний алдаа</string>
+    <string name="common_google_play_services_unknown_issue">%1$s-г Google Play-н үйлчилгээгээр ашиглахад асуудал гарлаа. Дахин оролдоно уу.</string>
+    <string name="common_google_play_services_unsupported_text">Таны төхөөрөмж Google Play үйлчилгээг дэмждэггүй учир %1$s ажиллахгүй.</string>
+    <string msgid="6556509956452265614" name="common_google_play_services_update_button">Шинэчлэх</string>
+    <string msgid="9053896323427875356" name="common_google_play_services_update_text">%1$s нь таныг Google Play үйлчилгээнүүдийг шинэчлэхээс нааш ажиллахгүй.</string>
+    <string msgid="6006316683626838685" name="common_google_play_services_update_title">Google Play үйлчилгээг шинэчлэх</string>
+    <string name="common_google_play_services_updating_text">%1$s нь одоогоор шинэчилж буй Google Play үйлчилгээгүйгээр ажиллахгүй.</string>
+    <string name="common_google_play_services_wear_update_text">Google Play үйлчилгээний шинэ хувилбар хэрэгтэй. Энэ нь удахгүй өөрөө өөрийгөө шинэчлэх болно.</string>
+    <string name="common_open_on_phone">Утсаар нээх</string>
+    <string name="common_signin_button_text">Нэвтрэх</string>
+    <string name="common_signin_button_text_long">Google-р нэвтрэх:</string>
+    <string msgid="6412144553299494336" name="confirmation_overlay_a11y_description_fail">"Амжилтгүй"</string>
+    <string msgid="8809042819843332546" name="confirmation_overlay_a11y_description_phone">"Таны утсан дээр нээсэн"</string>
+    <string msgid="2936753235333429892" name="confirmation_overlay_a11y_description_success">"Амжилттай"</string>
+    <string msgid="3209159573327985035" name="copy">"Хуулах"</string>
+    <string name="dismiss_overlay_button_label">Гарах</string>
+    <string msgid="1234962710353108940" name="expand_button_title">"Дэлгэрэнгүй"</string>
+    <string name="generic_cancel">Цуцлах</string>
+    <string name="generic_yes">Тийм</string>
+    <string name="navigation_drawer_content_description">Навигацын шургуулга</string>
+    <string msgid="478774118347071097" name="not_set">"Тохируулаагүй"</string>
+    <string msgid="7961817945132860002" name="preference_copied">"\"<ns1:g id="SUMMARY">%1$s</ns1:g>\"-г түр санах ойд хуулсан."</string>
+    <string msgid="730395136688082741" name="search_menu_title">"Хайх"</string>
+    <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="5190123168583152844" name="summary_collapsed_preference_list">"<ns1:g id="CURRENT_ITEMS">%1$s</ns1:g>, <ns1:g id="ADDED_ITEMS">%2$s</ns1:g>"</string>
+    <string name="time_difference_now">Одоо</string>
+    <string name="time_difference_short_days_and_hours" tools:ignore="ByteOrderMark">%1$s\u0020%2$s</string>
+    <string name="time_difference_short_hours_and_minutes" tools:ignore="ByteOrderMark">%1$s\u0020%2$s</string>
+    <string msgid="5138405918326871307" name="v7_preference_off">"ИДЭВХГҮЙ"</string>
+    <string msgid="27351710992731591" name="v7_preference_on">"ИДЭВХТЭЙ"</string>
+    <string msgid="8863821639144537553" name="ws_action_drawer_content_description">"Үйлдлийн татуурга"</string>
+    <string msgid="777117228299084604" name="ws_navigation_drawer_content_description">"Навигацын шургуулга"</string>
+</resources>

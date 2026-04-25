@@ -8,6 +8,26 @@
     tools:context=".NavigationActivity">
 
     <!-- Live Camera Feed (Full Screen) -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/bg_dark">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Live Assistance"
+            app:titleCentered="true"
+            app:titleTextColor="@color/white">
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/modeSwitchToolbar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp" />
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
+
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"
@@ -33,7 +53,7 @@
         android:padding="20dp">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/muteButton"
+            android:id="@+id/muteButtonTop"
             style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="56dp"
             android:layout_height="56dp"
@@ -184,33 +204,109 @@
                         android:src="@drawable/ic_haptic_forward"
                         app:tint="#00E676"
                         android:background="@drawable/shape_circle_outline"
-                        android:padding="12dp" />
+                        android:padding="12dp"
+                        android:contentDescription="Haptic Feedback Icon" />
 
                     <TextView
                         android:id="@+id/hapticDescription"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:text="Path is clear"
-                        android:textColor="#BDBDBD"
-                        android:textSize="16sp"
-                        android:textStyle="normal" />
+                        android:layout_marginStart="12dp"
+                        android:text="Haptic Feedback"
+                        android:textColor="#FFFFFF" />
                 </LinearLayout>
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:id="@+id/directionTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="FORWARD"
+                    android:textColor="@color/white"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/directionIcon"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_arrow_forward"
+                    app:tint="@color/neon_green"
+                    android:contentDescription="Direction Arrow" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/instructionText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Path is clear. Continue straight."
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp" />
+
+            <!-- Status Indicator Dots -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp">
+                <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/shape_pulse_dot" android:layout_margin="4dp" />
+                <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/shape_pulse_dot" android:layout_margin="4dp" />
+                <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/shape_pulse_dot" android:layout_margin="4dp" />
+                <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/shape_pulse_dot" android:layout_margin="4dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                android:gravity="center">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/muteButton"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:icon="@drawable/ic_volume_up"
+                    app:iconTint="@color/white"
+                    android:contentDescription="Mute Voice" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/stopNavButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="64dp"
-                    android:layout_alignParentEnd="true"
-                    android:text="Stop"
-                    android:paddingHorizontal="32dp"
-                    app:cornerRadius="32dp"
-                    app:backgroundTint="#CF6679"
-                    android:textColor="#000000"
-                    android:textStyle="bold" />
-            </RelativeLayout>
-
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="STOP"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/neon_red"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/confirmationButton"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_margin="32dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:text="DOUBLE TAP\nTO START"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        app:cornerRadius="32dp"
+        app:backgroundTint="@color/neon_orange"
+        android:textColor="@color/white"
+        android:elevation="12dp"
+        android:alpha="0.8" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

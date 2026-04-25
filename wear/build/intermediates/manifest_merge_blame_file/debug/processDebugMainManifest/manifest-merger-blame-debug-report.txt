@@ -1,0 +1,82 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.accesnav"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+7-->INJECTED
+8        android:minSdkVersion="26"
+8-->INJECTED
+9        android:targetSdkVersion="36" />
+9-->INJECTED
+10
+11    <uses-feature android:name="android.hardware.type.watch" />
+11-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:4:5-64
+11-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:4:19-61
+12
+13    <uses-permission android:name="android.permission.VIBRATE" />
+13-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:5:5-66
+13-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:5:22-63
+14
+15    <application
+15-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:7:5-28:19
+16        android:allowBackup="true"
+16-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:8:9-35
+17        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+17-->[androidx.core:core:1.6.0] C:\Users\chiri\.gradle\caches\9.4.1\transforms\0b11cd52934ca3b8083286c30abe91d2\transformed\core-1.6.0\AndroidManifest.xml:24:18-86
+18        android:debuggable="true"
+19        android:extractNativeLibs="false"
+19-->INJECTED
+20        android:icon="@mipmap/ic_launcher"
+20-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:9:9-43
+21        android:label="@string/app_name"
+21-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:10:9-41
+22        android:supportsRtl="true"
+22-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:11:9-35
+23        android:theme="@android:style/Theme.DeviceDefault" >
+23-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:12:9-59
+24        <uses-library
+24-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:14:9-16:40
+25            android:name="com.google.android.wearable"
+25-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:15:13-55
+26            android:required="false" />
+26-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:16:13-37
+27
+28        <activity
+28-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:18:9-26:20
+29            android:name="com.example.accesnav.wear.MainActivity"
+29-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:19:13-41
+30            android:exported="true"
+30-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:20:13-36
+31            android:label="@string/app_name" >
+31-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:21:13-45
+32            <intent-filter>
+32-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:22:13-25:29
+33                <action android:name="android.intent.action.MAIN" />
+33-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:23:17-69
+33-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:23:25-66
+34
+35                <category android:name="android.intent.category.LAUNCHER" />
+35-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:24:17-77
+35-->C:\Users\chiri\AndroidStudioProjects\AccesNav\wear\src\main\AndroidManifest.xml:24:27-74
+36            </intent-filter>
+37        </activity>
+38        <activity
+38-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\chiri\.gradle\caches\9.4.1\transforms\2157e47abb25e87947fd7bde0c41953f\transformed\play-services-base-18.0.1\AndroidManifest.xml:20:9-22:45
+39            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+39-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\chiri\.gradle\caches\9.4.1\transforms\2157e47abb25e87947fd7bde0c41953f\transformed\play-services-base-18.0.1\AndroidManifest.xml:20:19-85
+40            android:exported="false"
+40-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\chiri\.gradle\caches\9.4.1\transforms\2157e47abb25e87947fd7bde0c41953f\transformed\play-services-base-18.0.1\AndroidManifest.xml:22:19-43
+41            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+41-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\chiri\.gradle\caches\9.4.1\transforms\2157e47abb25e87947fd7bde0c41953f\transformed\play-services-base-18.0.1\AndroidManifest.xml:21:19-78
+42
+43        <meta-data
+43-->[com.google.android.gms:play-services-basement:18.0.0] C:\Users\chiri\.gradle\caches\9.4.1\transforms\76d1adc09244b2138556745b6735d4c2\transformed\play-services-basement-18.0.0\AndroidManifest.xml:21:9-23:69
+44            android:name="com.google.android.gms.version"
+44-->[com.google.android.gms:play-services-basement:18.0.0] C:\Users\chiri\.gradle\caches\9.4.1\transforms\76d1adc09244b2138556745b6735d4c2\transformed\play-services-basement-18.0.0\AndroidManifest.xml:22:13-58
+45            android:value="@integer/google_play_services_version" />
+45-->[com.google.android.gms:play-services-basement:18.0.0] C:\Users\chiri\.gradle\caches\9.4.1\transforms\76d1adc09244b2138556745b6735d4c2\transformed\play-services-basement-18.0.0\AndroidManifest.xml:23:13-66
+46    </application>
+47
+48</manifest>

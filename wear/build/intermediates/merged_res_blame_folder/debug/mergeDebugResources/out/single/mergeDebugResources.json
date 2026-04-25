@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.example.accesnav.wear-debug-17:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.example.accesnav.wear-main-19:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.example.accesnav.wear-debug-17:/layout_activity_main.xml.flat",
+        "source": "com.example.accesnav.wear-main-19:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.accesnav.wear-debug-17:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.example.accesnav.wear-main-19:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.accesnav.wear-debug-17:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.example.accesnav.wear-main-19:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.example.accesnav.wear-debug-17:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.example.accesnav.wear-main-19:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    }
+]

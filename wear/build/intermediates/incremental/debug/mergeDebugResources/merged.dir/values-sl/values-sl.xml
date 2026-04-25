@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2" xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="time_difference_short_days" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d d</item>
+<item quantity="two">%d d</item>
+<item quantity="few">%d d</item>
+<item quantity="other">%d d</item>
+</plurals>
+    <plurals name="time_difference_short_hours" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d h</item>
+<item quantity="two">%d h</item>
+<item quantity="few">%d h</item>
+<item quantity="other">%d h</item>
+</plurals>
+    <plurals name="time_difference_short_minutes" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d min</item>
+<item quantity="two">%d min</item>
+<item quantity="few">%d min</item>
+<item quantity="other">%d min</item>
+</plurals>
+    <plurals name="time_difference_words_days" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d dan</item>
+<item quantity="two">%d dneva</item>
+<item quantity="few">%d dnevi</item>
+<item quantity="other">%d dni</item>
+</plurals>
+    <plurals name="time_difference_words_hours" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d ura</item>
+<item quantity="two">%d uri</item>
+<item quantity="few">%d ure</item>
+<item quantity="other">%d ur</item>
+</plurals>
+    <plurals name="time_difference_words_minutes" tools:ignore="UnusedQuantity,MissingQuantity"><item quantity="one">%d minuta</item>
+<item quantity="two">%d minuti</item>
+<item quantity="few">%d minute</item>
+<item quantity="other">%d minut</item>
+</plurals>
+    <string name="a11y_no_data">Ni podatkov</string>
+    <string name="a11y_no_permission">Nima dovoljenja za dostop do podatkov</string>
+    <string name="a11y_template_range">%1$f od %2$f</string>
+    <string msgid="7903180715631665059" name="abc_action_bar_home_description">"Krmarjenje na začetek"</string>
+    <string msgid="6794660482873516081" name="abc_action_bar_up_description">"Pomik navzgor"</string>
+    <string msgid="1155814932213556626" name="abc_action_menu_overflow_description">"Več možnosti"</string>
+    <string msgid="2571498368472823490" name="abc_action_mode_done">"Končano"</string>
+    <string msgid="3732416590524162402" name="abc_activity_chooser_view_see_all">"Pokaži vse"</string>
+    <string msgid="1798588241954930982" name="abc_activitychooserview_choose_application">"Izbira aplikacije"</string>
+    <string msgid="3403923230105792483" name="abc_capital_off">"IZKLOP"</string>
+    <string msgid="7831734969929204599" name="abc_capital_on">"VKLOP"</string>
+    <string msgid="5725160506500770567" name="abc_menu_alt_shortcut_label">"Alt +"</string>
+    <string msgid="944415252197684443" name="abc_menu_ctrl_shortcut_label">"Ctrl +"</string>
+    <string msgid="129742188101734366" name="abc_menu_delete_shortcut_label">"delete"</string>
+    <string msgid="6840127756824236027" name="abc_menu_enter_shortcut_label">"enter"</string>
+    <string msgid="4974283687810130415" name="abc_menu_function_shortcut_label">"Fn +"</string>
+    <string msgid="8046416353848716905" name="abc_menu_meta_shortcut_label">"Meta +"</string>
+    <string msgid="3271697756921353410" name="abc_menu_shift_shortcut_label">"Shift +"</string>
+    <string msgid="2304645930658438191" name="abc_menu_space_shortcut_label">"preslednica"</string>
+    <string msgid="8327365089695024394" name="abc_menu_sym_shortcut_label">"Sym +"</string>
+    <string msgid="3570106412128999382" name="abc_prepend_shortcut_label">"Meni +"</string>
+    <string msgid="940844115270746197" name="abc_search_hint">"Iskanje …"</string>
+    <string msgid="1769270744562318534" name="abc_searchview_description_clear">"Izbris poizvedbe"</string>
+    <string msgid="908784302972860853" name="abc_searchview_description_query">"Iskalna poizvedba"</string>
+    <string msgid="5466662225065974044" name="abc_searchview_description_search">"Iskanje"</string>
+    <string msgid="8203855622131699655" name="abc_searchview_description_submit">"Pošiljanje poizvedbe"</string>
+    <string msgid="3478748990613108725" name="abc_searchview_description_voice">"Glasovno iskanje"</string>
+    <string msgid="2650565705514630347" name="abc_shareactionprovider_share_with">"Skupna raba z:"</string>
+    <string msgid="9009661856846212431" name="abc_shareactionprovider_share_with_application">"Skupna raba z drugimi prek aplikacije <ns1:g id="APPLICATION_NAME">%s</ns1:g>"</string>
+    <string msgid="6389460216547290468" name="abc_toolbar_collapse_description">"Strnitev"</string>
+    <string name="buttons_rect_bottom_center">Spodaj</string>
+    <string name="buttons_rect_bottom_left">Spodaj levo</string>
+    <string name="buttons_rect_bottom_right">Spodaj desno</string>
+    <string name="buttons_rect_left_bottom">Spodaj, na levi strani</string>
+    <string name="buttons_rect_left_center">Na sredini levo</string>
+    <string name="buttons_rect_left_top">Zgoraj, na levi strani</string>
+    <string name="buttons_rect_right_bottom">Spodaj, na desni strani</string>
+    <string name="buttons_rect_right_center">Na sredini desno</string>
+    <string name="buttons_rect_right_top">Zgoraj, na desni strani</string>
+    <string name="buttons_rect_top_center">Zgoraj</string>
+    <string name="buttons_rect_top_left">Zgoraj levo</string>
+    <string name="buttons_rect_top_right">Zgoraj desno</string>
+    <string name="buttons_round_bottom_center">Spodaj</string>
+    <string name="buttons_round_bottom_left">Spodaj levo</string>
+    <string name="buttons_round_bottom_left_lower">Spodaj levo, spodnji</string>
+    <string name="buttons_round_bottom_left_upper">Spodaj levo, zgornji</string>
+    <string name="buttons_round_bottom_right">Spodaj desno</string>
+    <string name="buttons_round_bottom_right_lower">Spodaj desno, spodnji</string>
+    <string name="buttons_round_bottom_right_upper">Spodaj desno, zgornji</string>
+    <string name="buttons_round_center_left">Na sredini levo</string>
+    <string name="buttons_round_center_right">Na sredini desno</string>
+    <string name="buttons_round_top_center">Zgoraj</string>
+    <string name="buttons_round_top_left">Zgoraj levo</string>
+    <string name="buttons_round_top_left_lower">Zgoraj levo, spodnji</string>
+    <string name="buttons_round_top_left_upper">Zgoraj levo, zgornji</string>
+    <string name="buttons_round_top_right">Zgoraj desno</string>
+    <string name="buttons_round_top_right_lower">Zgoraj desno, spodnji</string>
+    <string name="buttons_round_top_right_upper">Zgoraj desno, zgornji</string>
+    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">Omogoči</string>
+    <string msgid="227660514972886228" name="common_google_play_services_enable_text">Aplikacija %1$s ne bo delovala, če ne omogočite storitev Google Play.</string>
+    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">Omogočanje storitev Google Play</string>
+    <string msgid="7153882981874058840" name="common_google_play_services_install_button">Namesti</string>
+    <string name="common_google_play_services_install_text">Aplikacija %1$s ne deluje brez storitev Google Play, vendar teh ni v napravi.</string>
+    <string msgid="7215213145546190223" name="common_google_play_services_install_title">Namestitev storitev Google Play</string>
+    <string name="common_google_play_services_notification_channel_name">Dostopnost storitev Google Play</string>
+    <string name="common_google_play_services_notification_ticker">Napaka storitev Google Play</string>
+    <string name="common_google_play_services_unknown_issue">Aplikacija %1$s ima težave s storitvami Google Play. Poskusite znova.</string>
+    <string name="common_google_play_services_unsupported_text">Aplikacija %1$s ne deluje brez storitev Google Play, ki jih vaša naprava ne podpira.</string>
+    <string msgid="6556509956452265614" name="common_google_play_services_update_button">Posodobi</string>
+    <string msgid="9053896323427875356" name="common_google_play_services_update_text">Aplikacija %1$s ne bo delovala, če ne posodobite storitev Google Play.</string>
+    <string msgid="6006316683626838685" name="common_google_play_services_update_title">Posodobitev storitev Google Play</string>
+    <string name="common_google_play_services_updating_text">Aplikacija %1$s ne deluje brez storitev Google Play, ki se trenutno posodabljajo.</string>
+    <string name="common_google_play_services_wear_update_text">Potrebujete novo različico storitev Google Play. V kratkem se bodo posodobile.</string>
+    <string name="common_open_on_phone">Odpiranje v telefonu</string>
+    <string name="common_signin_button_text">Prijava</string>
+    <string name="common_signin_button_text_long">Prijava z računom Google</string>
+    <string msgid="6412144553299494336" name="confirmation_overlay_a11y_description_fail">"Napaka"</string>
+    <string msgid="8809042819843332546" name="confirmation_overlay_a11y_description_phone">"Odprto v telefonu"</string>
+    <string msgid="2936753235333429892" name="confirmation_overlay_a11y_description_success">"Uspelo je."</string>
+    <string msgid="3209159573327985035" name="copy">"Kopiraj"</string>
+    <string name="dismiss_overlay_button_label">Zapri</string>
+    <string msgid="1234962710353108940" name="expand_button_title">"Dodatno"</string>
+    <string name="generic_cancel">Prekliči</string>
+    <string name="generic_yes">Da</string>
+    <string name="navigation_drawer_content_description">Predal za krmarjenje</string>
+    <string msgid="478774118347071097" name="not_set">"Ni nastavljeno"</string>
+    <string msgid="7961817945132860002" name="preference_copied">"»<ns1:g id="SUMMARY">%1$s</ns1:g>« je bilo kopirano v odložišče."</string>
+    <string msgid="730395136688082741" name="search_menu_title">"Iskanje"</string>
+    <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="5190123168583152844" name="summary_collapsed_preference_list">"<ns1:g id="CURRENT_ITEMS">%1$s</ns1:g>, <ns1:g id="ADDED_ITEMS">%2$s</ns1:g>"</string>
+    <string name="time_difference_now">Zdaj</string>
+    <string name="time_difference_short_days_and_hours" tools:ignore="ByteOrderMark">%1$s %2$s﻿</string>
+    <string name="time_difference_short_hours_and_minutes" tools:ignore="ByteOrderMark">%1$s %2$s﻿</string>
+    <string msgid="5138405918326871307" name="v7_preference_off">"IZKLOPLJENO"</string>
+    <string msgid="27351710992731591" name="v7_preference_on">"VKLOPLJENO"</string>
+    <string msgid="8863821639144537553" name="ws_action_drawer_content_description">"Predal z dejanji"</string>
+    <string msgid="777117228299084604" name="ws_navigation_drawer_content_description">"Predal za krmarjenje"</string>
+</resources>

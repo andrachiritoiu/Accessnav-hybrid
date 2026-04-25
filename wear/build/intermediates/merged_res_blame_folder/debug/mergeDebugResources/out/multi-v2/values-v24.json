@@ -1,0 +1,38 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.accesnav.wear-mergeDebugResources-15:/values-v24/values-v24.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\chiri\\.gradle\\caches\\9.4.1\\transforms\\9c0c99458bbdbfb19ad7416447abfd4a\\transformed\\appcompat-1.1.0\\res\\values-v24\\values-v24.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,212",
+                        "endColumns": "156,134",
+                        "endOffsets": "207,342"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\chiri\\.gradle\\caches\\9.4.1\\transforms\\7c7eea16bc4cd89f2c78c98ca25a41d6\\transformed\\wear-1.3.0\\res\\values-v24\\values-v24.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "14",
+                        "endColumns": "12",
+                        "endOffsets": "929"
+                    },
+                    "to": {
+                        "startLines": "4",
+                        "startColumns": "4",
+                        "startOffsets": "347",
+                        "endLines": "16",
+                        "endColumns": "12",
+                        "endOffsets": "1221"
+                    }
+                }
+            ]
+        }
+    ]
+}

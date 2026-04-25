@@ -1,186 +1,249 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg_light"
     tools:context=".MainActivity">
 
-    <!-- The Google Map Fragment using FragmentContainerView -->
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- API KEY WARNING -->
-    <TextView
-        android:id="@+id/apiKeyWarning"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFDADA"
-        android:gravity="center"
-        android:padding="16dp"
-        android:text="⚠️ GOOGLE MAPS API KEY MISSING\nPlease set your key in AndroidManifest.xml"
-        android:textColor="#B00020"
-        android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:background="@color/bg_light"
+        app:elevation="0dp">
 
-    <!-- Large Confirmation Overlay Button (DIRECT CHILD) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/confirmationButton"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:layout_margin="32dp"
-        android:visibility="gone"
-        android:text="DOUBLE TAP\nTO START"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        app:cornerRadius="32dp"
-        app:backgroundTint="#FF9800"
-        android:textColor="#FFFFFF"
-        android:elevation="12dp"
-        android:alpha="0.7"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Top Overlay -->
-    <LinearLayout
-        android:id="@+id/topOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="8dp"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <com.google.android.material.card.MaterialCardView
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="4dp"
-            app:strokeWidth="0dp">
+            android:layout_height="?attr/actionBarSize"
+            app:title=""
+            app:titleCentered="true">
+            
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"
+                android:src="@drawable/ic_mic"
+                app:tint="@color/google_blue" />
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                app:title="AccessNav"
-                app:titleCentered="true">
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/modeSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="16dp"
-                    android:checked="false"
-                    app:thumbIcon="@drawable/ic_navigation"
-                    android:contentDescription="Navigation Mode Toggle" />
-                
-                <ImageButton
-                    android:id="@+id/settingsButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="end"
-                    android:layout_marginEnd="12dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@drawable/ic_settings"
-                    app:tint="?attr/colorOnSurface"
-                    android:contentDescription="Settings" />
-            </com.google.android.material.appbar.MaterialToolbar>
-        </com.google.android.material.card.MaterialCardView>
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:orientation="horizontal">
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/watchChip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Watch"
-                app:chipIcon="@drawable/ic_watch"
-                android:layout_marginEnd="8dp"
-                app:chipBackgroundColor="#CCFFFFFF"
-                style="@style/Widget.Material3.Chip.Assist" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/beaconChip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Beacon"
-                app:chipIcon="@drawable/ic_beacon"
-                app:chipBackgroundColor="#CCFFFFFF"
-                style="@style/Widget.Material3.Chip.Assist" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Bottom Controls -->
-    <LinearLayout
-        android:id="@+id/bottomControls"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/activityCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="6dp"
-            app:strokeWidth="0dp">
+            android:orientation="vertical"
+            android:padding="20dp">
 
-            <LinearLayout
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Good morning!"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="You're all set. Let's navigate."
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp" />
+
+            <!-- Navigation Active Status Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/lastActivityText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Ready to navigate"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                    android:gravity="center" />
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/outline_light"
+                app:strokeWidth="1dp">
                 
-                <TextView
-                    android:id="@+id/destinationText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:layout_marginTop="8dp"
-                    android:text="Target: ---"
-                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-                    android:textColor="#1A73E8"
-                    android:textStyle="bold"
-                    android:gravity="center" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Navigation active"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold" />
+                            
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_toEndOf="@id/statusText"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/shape_pulse_dot" />
+                            
+                        <ImageView
+                            android:layout_width="60dp"
+                            android:layout_height="24dp"
+                            android:layout_alignParentEnd="true"
+                            android:src="@drawable/ic_gemini"
+                            app:tint="@color/google_blue" />
+                    </RelativeLayout>
+                    
+                    <TextView
+                        android:id="@+id/statusText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Listening and analyzing surroundings..."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                    
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Camera • AI Vision • Cloud"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/startNavButton"
-            android:layout_width="match_parent"
-            android:layout_height="72dp"
-            android:text="Start Navigation"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:cornerRadius="36dp"
-            app:backgroundTint="#1A73E8"
-            android:textColor="#FFFFFF" />
-    </LinearLayout>
+            <!-- Current Guidance Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/outline_light"
+                app:strokeWidth="1dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Current guidance"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical">
+                        
+                        <ImageView
+                            android:id="@+id/directionIcon"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/shape_circle_outline"
+                            android:backgroundTint="@color/google_blue"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_arrow_forward"
+                            app:tint="@color/google_blue" />
+                            
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:orientation="vertical">
+                            
+                            <TextView
+                                android:id="@+id/guidanceText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Turn right in 20 meters"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+                                
+                            <TextView
+                                android:id="@+id/lastActivityText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Accessible ramp on your right."
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Confidence: High"
+                        android:textColor="@color/google_blue"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <!-- Map Placeholder / Mini Map -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp">
+                <fragment
+                    android:id="@+id/map"
+                    android:name="com.google.android.gms.maps.SupportMapFragment"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Emergency Stop Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/emergencyStop"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="100dp"
+                android:text="Emergency stop"
+                android:textColor="@color/google_red"
+                android:textStyle="bold"
+                app:backgroundTint="#1AEE4335"
+                app:cornerRadius="32dp"
+                app:icon="@drawable/ic_exit"
+                app:iconGravity="textStart"
+                app:iconTint="@color/google_red"
+                app:strokeColor="@color/google_red"
+                app:strokeWidth="1dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/white"
+        app:itemIconTint="@color/google_blue"
+        app:itemTextColor="@color/google_blue"
+        app:menu="@menu/bottom_nav_menu"
+        app:labelVisibilityMode="labeled" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
