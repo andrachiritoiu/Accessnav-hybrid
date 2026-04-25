@@ -57,16 +57,16 @@
             style="@style/Widget.Material3.Chip.Assist" />
     </LinearLayout>
 
-    <!-- Illustration Area -->
-    <ImageView
-        android:id="@+id/heroImage"
-        android:layout_width="260dp"
-        android:layout_height="260dp"
-        android:src="@drawable/img_navigation_hero"
-        android:layout_marginTop="24dp"
+    <!-- Map View Area -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/statusLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintBottom_toTopOf="@id/destinationCard" />
 
     <!-- Recent Activity Card -->
     <com.google.android.material.card.MaterialCardView
