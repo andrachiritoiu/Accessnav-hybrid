@@ -30,10 +30,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.speech.tts.UtteranceProgressListener
 import org.json.JSONObject
-import java.net.HttpURLConnection
+import java.net.DatagramPacket
+import java.net.DatagramSocket
 import java.net.NetworkInterface
 import java.net.URL
 import java.util.*
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -43,6 +45,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var tts: TextToSpeech? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private var timeoutRunnable: Runnable? = null
+    private var udpStarted = false
 
     private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -136,7 +139,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         val ip = getLocalIpAddress()
-        binding.lastActivityText.text = "IP: $ip • Active"
+        binding.lastActivityText.text = "IP: $ip • Ready"
     }
 
     private fun startVoiceSearch() {
@@ -232,8 +235,73 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.topOverlay.visibility = View.VISIBLE
         binding.destinationText.visibility = View.GONE
         googleMap?.clear()
-        binding.lastActivityText.text = "Ready to navigate"
+        binding.lastActivityText.text = "System Ready"
         tts?.speak("Request timed out. Returning to home.", TextToSpeech.QUEUE_FLUSH, null, null)
+    }
+
+    private fun startUdpListener() {
+        if (udpStarted) return
+        udpStarted = true
+        
+        thread(start = true) {
+            try {
+                val socket = DatagramSocket(5050)
+                val buffer = ByteArray(1024)
+                Log.d("UDP", "Listener started on port 5050")
+
+                while (true) {
+                    val packet = DatagramPacket(buffer, buffer.size)
+                    socket.receive(packet)
+                    val message = String(packet.data, 0, packet.length).trim()
+                    Log.d("UDP", "Received: $message")
+
+                    runOnUiThread {
+                        handleBeaconMessage(message)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("UDP", "Error: ${e.message}")
+                udpStarted = false
+            }
+        }
+    }
+
+    private fun handleBeaconMessage(message: String) {
+        val (status, speech, command) = when (message) {
+            "RAMP_RIGHT" -> Triple("Accessible ramp detected on your right.", "Accessible ramp detected on your right.", "RIGHT")
+            "STAIRS_AHEAD", "STAIRS" -> Triple("Stairs ahead. Path may not be accessible.", "Stairs ahead. This path may not be accessible.", "STOP")
+            "LOW_LIGHT" -> Triple("Low visibility area. Proceed carefully.", "Low visibility area detected. Proceed carefully.", "FORWARD")
+            "ACCESSIBLE_EXIT_RIGHT" -> Triple("Accessible exit on your right.", "Accessible exit on your right.", "RIGHT")
+            "STOP" -> Triple("Stop. Unsafe path ahead.", "Stop. Unsafe path ahead.", "STOP")
+            else -> Triple("Beacon: $message", "Building update received.", "FORWARD")
+        }
+
+        binding.lastActivityText.text = status
+        tts?.speak(speech, TextToSpeech.QUEUE_FLUSH, null, null)
+        sendWatchCommand(command)
+    }
+
+    private fun sendWatchCommand(command: String) {
+        // Here we simulate the watch command with vibration
+        vibrateCommand(command)
+    }
+
+    private fun vibrateCommand(command: String) {
+        val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+        val pattern = when (command) {
+            "FORWARD" -> longArrayOf(0, 150)
+            "LEFT" -> longArrayOf(0, 120, 120, 120)
+            "RIGHT" -> longArrayOf(0, 120, 120, 120, 120, 120)
+            "STOP" -> longArrayOf(0, 700)
+            else -> longArrayOf(0, 100)
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
+        }
     }
 
     private fun decodePolyline(encoded: String): List<LatLng> {
@@ -269,7 +337,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         val intent = Intent(this, NavigationActivity::class.java)
         intent.putExtra("DESTINATION", binding.destinationText.text.toString())
         startActivity(intent)
-        resetUI() // Clear route and buttons so it's fresh when returning
+        resetUI()
+        
+        startUdpListener()
+        tts?.speak("AccessNav started. Listening for smart building beacons.", TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun getLocalIpAddress(): String {
