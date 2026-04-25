@@ -74,9 +74,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.forLanguageTag("ro-RO")
-                setupTTSListener()
-                tts?.speak("AccessNav este pregătit. Vă rog să spuneți destinația.", TextToSpeech.QUEUE_FLUSH, null, "READY")
+                tts?.apply {
+                    language = Locale.US
+                    setPitch(1.0f)
+                    setSpeechRate(0.9f) // Slightly slower for better clarity
+                    speak("Welcome to Access Nav. I am ready. Please say your destination.", TextToSpeech.QUEUE_FLUSH, null, "READY")
+                }
             }
         }
         
@@ -205,7 +208,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     
                     withContext(Dispatchers.Main) {
                         googleMap?.addPolyline(PolylineOptions().addAll(path).color(Color.parseColor("#1A73E8")).width(18f))
-                        val msg = "Distanța: $distance. Timp de călătorie: $duration. Atingeți de două ori ecranul pentru a porni navigarea acum."
+                        val msg = "I have found a route. The distance is $distance, and the travel time is $duration. Please double tap the screen if you would like to start the navigation now."
                         binding.lastActivityText.text = "$duration ($distance)"
                         
                         showConfirmationUI(msg)
@@ -230,7 +233,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun startTimeout() {
         cancelTimeout()
         timeoutRunnable = Runnable { resetUI() }
-        mainHandler.postDelayed(timeoutRunnable!!, 10000)
+        mainHandler.postDelayed(timeoutRunnable!!, 60000) // Changed to 1 minute
     }
 
     private fun cancelTimeout() {

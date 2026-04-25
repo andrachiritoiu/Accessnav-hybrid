@@ -94,7 +94,7 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
 
     private fun startLocationUpdates() {
         val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
-            .setMinimumUpdateIntervalMillis(1000)
+            .setMinUpdateIntervalMillis(1000)
             .build()
 
         locationCallback = object : LocationCallback() {
@@ -287,7 +287,11 @@ class NavigationActivity : AppCompatActivity(), OnMapReadyCallback, TextToSpeech
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            tts?.language = Locale.US
+            tts?.apply {
+                language = Locale.US
+                setPitch(1.0f)
+                setSpeechRate(0.9f)
+            }
         }
     }
 
