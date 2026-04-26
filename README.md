@@ -165,6 +165,4 @@ Built in 24 hours at the Google Hackathon — Accessibility Track.
 
 ---
 
-## License
 
-MIT
