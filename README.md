@@ -4,8 +4,6 @@
 
 A technical accessibility navigation platform for blind and visually impaired users, combining mobile perception, cloud-based route reasoning, and low-latency wearable feedback for real-time situational awareness.
 
-Built in 24 hours at the **Google Hackathon — Accessibility Track**.
-
 ---
 
 ## The Problem
@@ -202,7 +200,3 @@ GEMINI_API_KEY=your_key_here
 Navigation starts automatically — no screen interaction required.
 
 ---
-
-## License
-
-This project was built at the Google Hackathon — Accessibility Track.
